@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { COLORS } from "../../../constants/theme";
+import { getCategoryLabel } from "../../../constants/categories";
+import { COLORS, PRIORITY_COLORS } from "../../../constants/theme";
 import type { TodoModel } from "../../../types/todo";
 import { formatReminderDate, isReminderPast } from "../../../utils/dateUtils";
 
@@ -20,11 +21,21 @@ export function TodoCard({
   onDelete,
   onEdit,
 }: TodoCardProps) {
+  const priorityColor = item.priority
+    ? PRIORITY_COLORS[item.priority]
+    : undefined;
+
   return (
     <Animated.View
       entering={FadeIn.delay(index * 40).duration(300)}
       exiting={FadeOut.duration(200)}
-      style={styles.todoRow}
+      style={[
+        styles.todoRow,
+        priorityColor && {
+          borderLeftWidth: 4,
+          borderLeftColor: priorityColor,
+        },
+      ]}
     >
       <Pressable
         onPress={() => onToggle(item.id)}
@@ -49,20 +60,29 @@ export function TodoCard({
         >
           {item.text}
         </Text>
-        {item.reminderAt &&
-          !item.completed &&
-          !isReminderPast(item.reminderAt) && (
-            <View style={styles.reminderBadge}>
-              <Ionicons
-                name="alarm-outline"
-                size={14}
-                color={COLORS.textMuted}
-              />
-              <Text style={styles.reminderText}>
-                {formatReminderDate(item.reminderAt)}
+        <View style={styles.badges}>
+          {item.categoryId && (
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryBadgeText}>
+                {getCategoryLabel(item.categoryId)}
               </Text>
             </View>
           )}
+          {item.reminderAt &&
+            !item.completed &&
+            !isReminderPast(item.reminderAt) && (
+              <View style={styles.reminderBadge}>
+                <Ionicons
+                  name="alarm-outline"
+                  size={14}
+                  color={COLORS.textMuted}
+                />
+                <Text style={styles.reminderText}>
+                  {formatReminderDate(item.reminderAt)}
+                </Text>
+              </View>
+            )}
+        </View>
       </Pressable>
       <Pressable
         onPress={() => onDelete(item.id)}
@@ -110,11 +130,28 @@ const styles = StyleSheet.create({
     textDecorationLine: "line-through",
     color: COLORS.textMuted,
   },
+  badges: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 6,
+  },
+  categoryBadge: {
+    backgroundColor: COLORS.border,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  categoryBadgeText: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: COLORS.textMuted,
+  },
   reminderBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 6,
   },
   reminderText: {
     fontSize: 13,

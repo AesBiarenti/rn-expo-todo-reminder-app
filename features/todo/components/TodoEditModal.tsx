@@ -2,24 +2,49 @@ import DateTimePicker, {
   DateTimePickerAndroid,
 } from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
-import type { TodoModel } from "../../../types/todo";
-import { COLORS } from "../../../constants/theme";
-import { formatReminderDate } from "../../../../utils/dateUtils";
+import type { CategoryId, Priority, TodoModel } from "../../../types/todo";
+import { CATEGORIES } from "../../../constants/categories";
+import { COLORS, PRIORITY_COLORS } from "../../../constants/theme";
+import {
+  combineDateAndTime,
+  formatDateShort,
+  formatReminderDate,
+  formatTime,
+} from "../../../utils/dateUtils";
+
+const getDefaultDate = () => new Date(Date.now() + 3600000);
+const getDefaultTime = () => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() + 30);
+  return d;
+};
+
+const PRIORITIES: { value: Priority; label: string }[] = [
+  { value: "low", label: "Düşük" },
+  { value: "medium", label: "Orta" },
+  { value: "high", label: "Yüksek" },
+];
 
 interface TodoEditModalProps {
   todo: TodoModel | null;
   visible: boolean;
-  onSave: (text: string, reminderAt: string | null) => void;
+  onSave: (updates: {
+    text: string;
+    reminderAt: string | null;
+    priority?: Priority;
+    categoryId?: CategoryId;
+  }) => void;
   onClose: () => void;
 }
 
@@ -29,20 +54,46 @@ export function TodoEditModal({
   onSave,
   onClose,
 }: TodoEditModalProps) {
-  const [text, setText] = useState(todo?.text ?? "");
-  const [reminderAt, setReminderAt] = useState<string | null>(
-    todo?.reminderAt ?? null,
-  );
+  const [text, setText] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
+  const [priority, setPriority] = useState<Priority>("medium");
+  const [categoryId, setCategoryId] = useState<CategoryId | undefined>();
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [pickerMode, setPickerMode] = useState<"date" | "time">("date");
-  const [tempDate, setTempDate] = useState(
-    () => new Date(todo?.reminderAt ?? Date.now() + 3600000),
-  );
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<"date" | "time">("date");
+
+  const hasReminder = selectedDate !== null && selectedTime !== null;
+  const reminderAt = hasReminder
+    ? combineDateAndTime(selectedDate, selectedTime).toISOString()
+    : null;
+
+  useEffect(() => {
+    if (todo && visible) {
+      setText(todo.text);
+      setPriority(todo.priority ?? "medium");
+      setCategoryId(todo.categoryId);
+      if (todo.reminderAt) {
+        const d = new Date(todo.reminderAt);
+        setSelectedDate(d);
+        setSelectedTime(d);
+      } else {
+        setSelectedDate(null);
+        setSelectedTime(null);
+      }
+    }
+  }, [todo, visible]);
 
   const resetState = () => {
-    setText(todo?.text ?? "");
-    setReminderAt(todo?.reminderAt ?? null);
-    setTempDate(new Date(todo?.reminderAt ?? Date.now() + 3600000));
+    if (todo) {
+      setText(todo.text);
+      setSelectedDate(todo.reminderAt ? new Date(todo.reminderAt) : null);
+      setSelectedTime(todo.reminderAt ? new Date(todo.reminderAt) : null);
+      setPriority(todo.priority ?? "medium");
+      setCategoryId(todo.categoryId);
+    }
+    setShowDatePicker(false);
+    setShowTimePicker(false);
   };
 
   const handleClose = () => {
@@ -53,47 +104,66 @@ export function TodoEditModal({
   const handleSave = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    onSave(trimmed, reminderAt);
+    onSave({
+      text: trimmed,
+      reminderAt: hasReminder ? reminderAt : null,
+      priority,
+      categoryId,
+    });
     handleClose();
   };
 
   const openDatePicker = () => {
+    const value = selectedDate ?? getDefaultDate();
     if (Platform.OS === "android") {
       DateTimePickerAndroid.open({
-        value: tempDate,
-        mode: "datetime",
+        value,
+        mode: "date",
         minimumDate: new Date(),
         onChange: (_, date) => {
-          if (date) {
-            setTempDate(date);
-            setReminderAt(date.toISOString());
-          }
+          if (date) setSelectedDate(date);
         },
       });
     } else {
-      setPickerMode("date");
+      setPickerTarget("date");
       setShowDatePicker(true);
     }
   };
 
-  const handleDateChange = (_: unknown, date?: Date) => {
+  const openTimePicker = () => {
+    const value = selectedTime ?? getDefaultTime();
+    if (Platform.OS === "android") {
+      DateTimePickerAndroid.open({
+        value,
+        mode: "time",
+        onChange: (_, date) => {
+          if (date) setSelectedTime(date);
+        },
+      });
+    } else {
+      setPickerTarget("time");
+      setShowTimePicker(true);
+    }
+  };
+
+  const handlePickerChange = (_: unknown, date?: Date) => {
     if (Platform.OS === "android") return;
     if (date) {
-      if (pickerMode === "date") {
-        setTempDate(date);
-        setPickerMode("time");
-      } else {
-        setTempDate(date);
-        setReminderAt(date.toISOString());
+      if (pickerTarget === "date") {
+        setSelectedDate(date);
         setShowDatePicker(false);
+      } else {
+        setSelectedTime(date);
+        setShowTimePicker(false);
       }
     }
   };
 
   const handleRemoveReminder = () => {
-    setReminderAt(null);
+    setSelectedDate(null);
+    setSelectedTime(null);
     setShowDatePicker(false);
-    setTempDate(new Date(Date.now() + 3600000));
+    setShowTimePicker(false);
   };
 
   if (!todo) return null;
@@ -106,62 +176,157 @@ export function TodoEditModal({
       onRequestClose={handleClose}
     >
       <Pressable style={styles.overlay} onPress={handleClose}>
-        <Pressable style={styles.modal} onPress={(e) => e.stopPropagation()}>
-          <Text style={styles.title}>Düzenle</Text>
+        <Pressable
+          style={styles.modal}
+          onPress={(e) => e.stopPropagation()}
+        >
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Text style={styles.title}>Düzenle</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Görev metni"
-            placeholderTextColor={COLORS.textMuted}
-            value={text}
-            onChangeText={setText}
-            autoFocus
-          />
-
-          <View style={styles.reminderSection}>
-            <Text style={styles.label}>Hatırlatıcı</Text>
-            {reminderAt ? (
-              <View style={styles.reminderRow}>
-                <Ionicons name="alarm-outline" size={20} color={COLORS.accent} />
-                <Text style={styles.reminderText}>
-                  {formatReminderDate(reminderAt)}
-                </Text>
-                <Pressable
-                  onPress={openDatePicker}
-                  style={styles.changeBtn}
-                >
-                  <Text style={styles.changeBtnText}>Değiştir</Text>
-                </Pressable>
-                <Pressable onPress={handleRemoveReminder} style={styles.removeBtn}>
-                  <Ionicons name="close-circle" size={22} color={COLORS.danger} />
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable onPress={openDatePicker} style={styles.addReminderBtn}>
-                <Ionicons name="alarm-outline" size={20} color={COLORS.textMuted} />
-                <Text style={styles.addReminderText}>Hatırlatıcı ekle</Text>
-              </Pressable>
-            )}
-          </View>
-
-          {showDatePicker && Platform.OS === "ios" && (
-            <DateTimePicker
-              value={tempDate}
-              mode={pickerMode}
-              display="spinner"
-              minimumDate={new Date()}
-              onChange={handleDateChange}
+            <TextInput
+              style={styles.input}
+              placeholder="Görev metni"
+              placeholderTextColor={COLORS.textMuted}
+              value={text}
+              onChangeText={setText}
+              autoFocus
             />
-          )}
 
-          <View style={styles.actions}>
-            <Pressable onPress={handleClose} style={styles.cancelBtn}>
-              <Text style={styles.cancelBtnText}>İptal</Text>
-            </Pressable>
-            <Pressable onPress={handleSave} style={styles.saveBtn}>
-              <Text style={styles.saveBtnText}>Kaydet</Text>
-            </Pressable>
-          </View>
+            <View style={styles.section}>
+              <Text style={styles.label}>Öncelik</Text>
+              <View style={styles.priorityRow}>
+                {PRIORITIES.map((p) => (
+                  <Pressable
+                    key={p.value}
+                    onPress={() => setPriority(p.value)}
+                    style={[
+                      styles.priorityBtn,
+                      priority === p.value && {
+                        backgroundColor: PRIORITY_COLORS[p.value] + "30",
+                        borderColor: PRIORITY_COLORS[p.value],
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.priorityDot,
+                        { backgroundColor: PRIORITY_COLORS[p.value] },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.priorityLabel,
+                        priority === p.value && {
+                          color: PRIORITY_COLORS[p.value],
+                        },
+                      ]}
+                    >
+                      {p.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.label}>Kategori</Text>
+              <View style={styles.categoryRow}>
+                {CATEGORIES.map((c) => (
+                  <Pressable
+                    key={c.id}
+                    onPress={() =>
+                      setCategoryId(categoryId === c.id ? undefined : c.id)
+                    }
+                    style={[
+                      styles.categoryChip,
+                      categoryId === c.id && styles.categoryChipActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        categoryId === c.id && styles.categoryChipTextActive,
+                      ]}
+                    >
+                      {c.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.label}>Hatırlatıcı</Text>
+              <Pressable onPress={openDatePicker} style={styles.pickerRow}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={COLORS.accent}
+                />
+                <Text style={styles.pickerLabel}>Tarih</Text>
+                <Text style={styles.pickerValue}>
+                  {selectedDate
+                    ? formatDateShort(selectedDate)
+                    : "Tarih seç"}
+                </Text>
+              </Pressable>
+              <Pressable onPress={openTimePicker} style={styles.pickerRow}>
+                <Ionicons name="time-outline" size={20} color={COLORS.accent} />
+                <Text style={styles.pickerLabel}>Saat</Text>
+                <Text style={styles.pickerValue}>
+                  {selectedTime
+                    ? formatTime(selectedTime)
+                    : "Saat seç"}
+                </Text>
+              </Pressable>
+              {hasReminder && (
+                <Text style={styles.reminderPreview}>
+                  {formatReminderDate(reminderAt!)}
+                </Text>
+              )}
+              {hasReminder && (
+                <Pressable
+                  onPress={handleRemoveReminder}
+                  style={styles.removeReminderBtn}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={18}
+                    color={COLORS.danger}
+                  />
+                  <Text style={styles.removeReminderText}>
+                    Hatırlatıcıyı kaldır
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+
+            {(showDatePicker || showTimePicker) && Platform.OS === "ios" && (
+              <DateTimePicker
+                value={
+                  pickerTarget === "date"
+                    ? selectedDate ?? getDefaultDate()
+                    : selectedTime ?? getDefaultTime()
+                }
+                mode={pickerTarget}
+                display="spinner"
+                minimumDate={pickerTarget === "date" ? new Date() : undefined}
+                onChange={handlePickerChange}
+              />
+            )}
+
+            <View style={styles.actions}>
+              <Pressable onPress={handleClose} style={styles.cancelBtn}>
+                <Text style={styles.cancelBtnText}>İptal</Text>
+              </Pressable>
+              <Pressable onPress={handleSave} style={styles.saveBtn}>
+                <Text style={styles.saveBtnText}>Kaydet</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
         </Pressable>
       </Pressable>
     </Modal>
@@ -181,6 +346,7 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 1,
     borderColor: COLORS.border,
+    maxHeight: "90%",
   },
   title: {
     fontSize: 20,
@@ -199,8 +365,8 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 20,
   },
-  reminderSection: {
-    marginBottom: 24,
+  section: {
+    marginBottom: 20,
   },
   label: {
     fontSize: 13,
@@ -208,46 +374,100 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     marginBottom: 8,
   },
-  reminderRow: {
+  priorityRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  priorityBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  reminderText: {
-    flex: 1,
-    fontSize: 15,
+  priorityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  priorityLabel: {
+    fontSize: 13,
+    fontWeight: "500",
     color: COLORS.text,
   },
-  changeBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+  categoryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
-  changeBtnText: {
+  categoryChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.bg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  categoryChipActive: {
+    backgroundColor: COLORS.accentDim,
+    borderColor: COLORS.accent,
+  },
+  categoryChipText: {
     fontSize: 14,
+    color: COLORS.textMuted,
+  },
+  categoryChipTextActive: {
     color: COLORS.accent,
-    fontWeight: "500",
+    fontWeight: "600",
   },
-  removeBtn: {
-    padding: 4,
-  },
-  addReminderBtn: {
+  pickerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     padding: 14,
     backgroundColor: COLORS.bg,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
+    marginBottom: 10,
   },
-  addReminderText: {
+  pickerLabel: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: COLORS.text,
+    width: 50,
+  },
+  pickerValue: {
+    flex: 1,
     fontSize: 15,
     color: COLORS.textMuted,
+  },
+  reminderPreview: {
+    fontSize: 13,
+    color: COLORS.accent,
+    marginTop: 4,
+  },
+  removeReminderBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  removeReminderText: {
+    fontSize: 14,
+    color: COLORS.danger,
+    fontWeight: "500",
   },
   actions: {
     flexDirection: "row",
     gap: 12,
     justifyContent: "flex-end",
+    marginTop: 8,
   },
   cancelBtn: {
     paddingVertical: 12,

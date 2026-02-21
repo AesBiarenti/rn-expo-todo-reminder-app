@@ -1,4 +1,3 @@
-import Constants from "expo-constants";
 import { Platform } from "react-native";
 import type { TodoModel } from "../types/todo";
 import { isReminderPast } from "../utils/dateUtils";
@@ -9,12 +8,7 @@ function getNotificationId(todoId: string): string {
   return `todo-${todoId}`;
 }
 
-function isExpoGo(): boolean {
-  return Constants.appOwnership === "expo";
-}
-
 async function getNotifications() {
-  if (isExpoGo()) return null;
   try {
     return await import("expo-notifications");
   } catch {
@@ -43,11 +37,11 @@ export async function setup(): Promise<void> {
       vibrationPattern: [0, 250, 250, 250],
       lightColor: "#22C55E",
     });
+  }
 
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== "granted") {
-      throw new Error("Permission not granted");
-    }
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status !== "granted") {
+    return;
   }
 }
 
@@ -71,6 +65,7 @@ export async function scheduleTodoReminder(
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DATE,
       date,
+      ...(Platform.OS === "android" && { channelId: CHANNEL_ID }),
     },
   });
 }

@@ -10,3 +10,9 @@ export const COLORS = {
   danger: "#EF4444",
   dangerDim: "rgba(239, 68, 68, 0.2)",
 };
+
+export const PRIORITY_COLORS = {
+  low: "#3B82F6",
+  medium: "#F97316",
+  high: "#EF4444",
+} as const;

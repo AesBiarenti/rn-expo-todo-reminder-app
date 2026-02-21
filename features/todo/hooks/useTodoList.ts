@@ -1,20 +1,69 @@
 import { useMemo } from "react";
 import { useTodoStore } from "../../../store/todoStore";
-import type { TodoModel } from "../../../types/todo";
+import type { CategoryId, Priority, TodoModel } from "../../../types/todo";
 import type { FilterType } from "../components/TodoFilterBar";
 
-export function useTodoList(filter: FilterType) {
+export type SortType = "created" | "reminder" | "priority" | "text";
+
+const PRIORITY_ORDER: Record<Priority, number> = {
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+export function useTodoList(
+  filter: FilterType,
+  searchQuery = "",
+  categoryFilter?: CategoryId,
+  sortBy: SortType = "created",
+) {
   const todos = useTodoStore((s) => s.todos);
 
   const filteredTodos = useMemo(() => {
+    let result = todos;
+
     if (filter === "active") {
-      return todos.filter((t) => !t.completed);
+      result = result.filter((t) => !t.completed);
+    } else if (filter === "completed") {
+      result = result.filter((t) => t.completed);
     }
-    if (filter === "completed") {
-      return todos.filter((t) => t.completed);
+
+    if (categoryFilter) {
+      result = result.filter((t) => t.categoryId === categoryFilter);
     }
-    return todos;
-  }, [todos, filter]);
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((t) =>
+        t.text.toLowerCase().includes(q),
+      );
+    }
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "created":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "reminder":
+          if (!a.reminderAt) return 1;
+          if (!b.reminderAt) return -1;
+          return (
+            new Date(a.reminderAt).getTime() - new Date(b.reminderAt).getTime()
+          );
+        case "priority":
+          const pa = PRIORITY_ORDER[a.priority ?? "medium"];
+          const pb = PRIORITY_ORDER[b.priority ?? "medium"];
+          return pb - pa;
+        case "text":
+          return a.text.localeCompare(b.text);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [todos, filter, categoryFilter, searchQuery, sortBy]);
 
   const activeCount = useMemo(
     () => todos.filter((t) => !t.completed).length,
