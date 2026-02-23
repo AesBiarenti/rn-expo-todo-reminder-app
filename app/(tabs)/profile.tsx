@@ -1,26 +1,180 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-} from "react-native-reanimated";
+import Constants from "expo-constants";
+import { useMemo, useState } from "react";
+import {
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from "react-native";
+import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  cancelAllTodoReminders,
+  rescheduleAllReminders,
+} from "../../services/notificationService";
 import { useTodoStore } from "../../store/todoStore";
-import { COLORS } from "../../constants/theme";
+import { useProfileSettings } from "../../features/profile/hooks/useProfileSettings";
+import { useTheme } from "../../context/ThemeContext";
 
-const MENU_ITEMS = [
-  { icon: "notifications-outline", label: "Notifications", key: "notifications" },
-  { icon: "moon-outline", label: "Dark mode", key: "theme" },
-  { icon: "language-outline", label: "Language", key: "language" },
-  { icon: "help-circle-outline", label: "Help", key: "help" },
+const MENU_KEYS = [
+  { icon: "notifications-outline", labelKey: "profile.menuItems.notifications", key: "notifications", hasSwitch: true },
+  { icon: "moon-outline", labelKey: "profile.menuItems.darkMode", key: "theme", hasSwitch: false },
+  { icon: "language-outline", labelKey: "profile.menuItems.language", key: "language", hasSwitch: false },
+  { icon: "help-circle-outline", labelKey: "profile.menuItems.help", key: "help", hasSwitch: false },
 ];
 
 export default function ProfileScreen() {
+  const { t } = useTranslation();
+  const { colors, themePreference, setThemePreference } = useTheme();
   const insets = useSafeAreaInsets();
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [themeModalVisible, setThemeModalVisible] = useState(false);
+  const [helpModalVisible, setHelpModalVisible] = useState(false);
+
   const todos = useTodoStore((s) => s.todos);
-  const completedCount = todos.filter((t) => t.completed).length;
-  const activeCount = todos.filter((t) => !t.completed).length;
+  const clearCompleted = useTodoStore((s) => s.clearCompleted);
+
+  const { notificationsEnabled, setNotificationsEnabled } = useProfileSettings();
+
+  const completedCount = todos.filter((todo) => todo.completed).length;
+
+  const handleNotificationsToggle = async (value: boolean) => {
+    setNotificationsEnabled(value);
+    if (!value) {
+      await cancelAllTodoReminders(todos.map((todo) => todo.id));
+    } else {
+      await rescheduleAllReminders(todos);
+    }
+  };
+
+  const handleClearCompleted = () => {
+    if (completedCount === 0) return;
+    Alert.alert(
+      t("profile.clearCompleted"),
+      t("profile.clearCompletedConfirm", { count: completedCount }),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: () => {
+            clearCompleted();
+          },
+        },
+      ],
+    );
+  };
+
+  const handleMenuPress = (key: string) => {
+    if (key === "language") setLanguageModalVisible(true);
+    if (key === "theme") setThemeModalVisible(true);
+    if (key === "help") setHelpModalVisible(true);
+  };
+
+  const themeLabel =
+    themePreference === "system"
+      ? t("profile.themeSystem")
+      : themePreference === "light"
+        ? t("profile.themeLight")
+        : t("profile.themeDark");
+
+  const appVersion = Constants.expoConfig?.version ?? "1.0.0";
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.bg },
+        pageTitle: {
+          fontSize: 28,
+          fontWeight: "700",
+          color: colors.text,
+          paddingHorizontal: 24,
+          paddingTop: 16,
+          paddingBottom: 24,
+        },
+        section: { paddingHorizontal: 24, marginBottom: 24 },
+        sectionTitle: {
+          fontSize: 13,
+          fontWeight: "600",
+          color: colors.textMuted,
+          marginBottom: 12,
+          textTransform: "uppercase",
+          letterSpacing: 0.5,
+        },
+        menuItem: {
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: colors.surface,
+          padding: 16,
+          borderRadius: 16,
+          marginBottom: 8,
+        },
+        menuItemPressed: { opacity: 0.7 },
+        menuItemDisabled: { opacity: 0.6 },
+        menuItemContent: {
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginLeft: 14,
+        },
+        menuLabel: { fontSize: 16, color: colors.text },
+        menuLabelDisabled: { color: colors.textMuted },
+        menuSubtext: { fontSize: 14, color: colors.textMuted },
+        badge: { backgroundColor: colors.accent, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+        badgeText: { fontSize: 12, fontWeight: "600", color: colors.bg },
+        modalOverlay: {
+          flex: 1,
+          backgroundColor: "rgba(0,0,0,0.5)",
+          justifyContent: "center",
+          padding: 24,
+        },
+        modalContent: { backgroundColor: colors.surface, borderRadius: 20, padding: 24 },
+        helpModalContent: { maxHeight: "80%" },
+        modalTitle: {
+          fontSize: 18,
+          fontWeight: "700",
+          color: colors.text,
+          marginBottom: 16,
+          textAlign: "center",
+        },
+        aboutRow: {
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginBottom: 16,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        aboutLabel: { fontSize: 14, color: colors.textMuted },
+        aboutValue: { fontSize: 14, fontWeight: "600", color: colors.text },
+        tipsTitle: { fontSize: 14, fontWeight: "600", color: colors.text, marginBottom: 12 },
+        tipText: { fontSize: 14, color: colors.textMuted, marginBottom: 8, lineHeight: 22 },
+        langOption: {
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+          borderRadius: 16,
+          backgroundColor: colors.surfaceHover,
+          marginBottom: 8,
+        },
+        langOptionActive: {
+          backgroundColor: colors.accentDim,
+          borderWidth: 1,
+          borderColor: colors.accent,
+        },
+        langOptionText: { fontSize: 16, color: colors.text },
+        langOptionTextActive: { color: colors.accent, fontWeight: "600" },
+        modalCloseBtn: { marginTop: 12, paddingVertical: 12, alignItems: "center" },
+        modalCloseText: { fontSize: 16, color: colors.textMuted },
+      }),
+    [colors],
+  );
 
   return (
     <ScrollView
@@ -28,169 +182,188 @@ export default function ProfileScreen() {
       contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View
-        entering={FadeInDown.duration(400)}
-        style={styles.header}
-      >
-        <Animated.View
-          entering={FadeIn.delay(200).duration(400)}
-          style={styles.avatarWrap}
-        >
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>K</Text>
-          </View>
-        </Animated.View>
-        <Animated.Text
-          entering={FadeInUp.delay(300).duration(400)}
-          style={styles.name}
-        >
-          Kullanıcı
-        </Animated.Text>
-        <Animated.Text
-          entering={FadeInUp.delay(350).duration(400)}
-          style={styles.email}
-        >
-          user@example.com
-        </Animated.Text>
-      </Animated.View>
+      <Text style={styles.pageTitle}>{t("profile.settings")}</Text>
 
-      <Animated.View
-        entering={FadeInDown.delay(400).duration(400)}
-        style={styles.statsRow}
-      >
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{completedCount}</Text>
-          <Text style={styles.statLabel}>Tamamlanan</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{activeCount}</Text>
-          <Text style={styles.statLabel}>Bekleyen</Text>
-        </View>
-      </Animated.View>
-
-      <Animated.View
-        entering={FadeInDown.delay(500).duration(400)}
-        style={styles.section}
-      >
-        <Text style={styles.sectionTitle}>Ayarlar</Text>
-        {MENU_ITEMS.map((item, index) => (
-          <Animated.View
-            key={item.key}
-            entering={FadeInDown.delay(550 + index * 50).duration(300)}
-          >
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t("profile.settings")}</Text>
+        {MENU_KEYS.map((item) => (
+          <View key={item.key}>
             <Pressable
+              onPress={() => !item.hasSwitch && handleMenuPress(item.key)}
               style={({ pressed }) => [
                 styles.menuItem,
-                pressed && styles.menuItemPressed,
+                pressed && !item.hasSwitch && styles.menuItemPressed,
               ]}
             >
               <Ionicons
                 name={item.icon as keyof typeof Ionicons.glyphMap}
                 size={22}
-                color={COLORS.textMuted}
+                color={colors.textMuted}
               />
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={COLORS.textMuted}
-              />
+              <View style={styles.menuItemContent}>
+                <Text style={styles.menuLabel}>{t(item.labelKey)}</Text>
+                {item.key === "notifications" && (
+                  <Switch
+                    value={notificationsEnabled}
+                    onValueChange={handleNotificationsToggle}
+                    trackColor={{ false: colors.border, true: colors.accentDim }}
+                    thumbColor={notificationsEnabled ? colors.accent : colors.textMuted}
+                  />
+                )}
+                {item.key === "theme" && (
+                  <Text style={styles.menuSubtext}>{themeLabel}</Text>
+                )}
+                {!item.hasSwitch && item.key !== "theme" && (
+                  <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                )}
+              </View>
             </Pressable>
-          </Animated.View>
+          </View>
         ))}
-      </Animated.View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t("profile.data")}</Text>
+        <Pressable
+          onPress={handleClearCompleted}
+          disabled={completedCount === 0}
+          style={({ pressed }) => [
+            styles.menuItem,
+            pressed && styles.menuItemPressed,
+            completedCount === 0 && styles.menuItemDisabled,
+          ]}
+        >
+          <Ionicons name="trash-outline" size={22} color={colors.textMuted} />
+          <Text style={[styles.menuLabel, completedCount === 0 && styles.menuLabelDisabled]}>
+            {t("profile.clearCompleted")}
+          </Text>
+          {completedCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{completedCount}</Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
+
+      <Modal
+        visible={languageModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setLanguageModalVisible(false)}
+        >
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>{t("profile.languageModal.title")}</Text>
+            <Pressable
+              style={[styles.langOption, i18n.language === "tr" && styles.langOptionActive]}
+              onPress={() => {
+                i18n.changeLanguage("tr");
+                setLanguageModalVisible(false);
+              }}
+            >
+              <Text style={[styles.langOptionText, i18n.language === "tr" && styles.langOptionTextActive]}>
+                {t("profile.languageModal.turkish")}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.langOption, i18n.language === "en" && styles.langOptionActive]}
+              onPress={() => {
+                i18n.changeLanguage("en");
+                setLanguageModalVisible(false);
+              }}
+            >
+              <Text style={[styles.langOptionText, i18n.language === "en" && styles.langOptionTextActive]}>
+                {t("profile.languageModal.english")}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={styles.modalCloseBtn}
+              onPress={() => setLanguageModalVisible(false)}
+            >
+              <Text style={styles.modalCloseText}>{t("common.cancel")}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={helpModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setHelpModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setHelpModalVisible(false)}
+        >
+          <Pressable style={[styles.modalContent, styles.helpModalContent]} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>{t("profile.helpModal.title")}</Text>
+            <View style={styles.aboutRow}>
+              <Text style={styles.aboutLabel}>{t("profile.version")}</Text>
+              <Text style={styles.aboutValue}>{appVersion}</Text>
+            </View>
+            <Text style={styles.tipsTitle}>{t("profile.tips")}</Text>
+            <Text style={styles.tipText}>{t("profile.tip1")}</Text>
+            <Text style={styles.tipText}>{t("profile.tip2")}</Text>
+            <Text style={styles.tipText}>{t("profile.tip3")}</Text>
+            <Text style={styles.tipText}>{t("profile.tip4")}</Text>
+            <Pressable
+              style={styles.modalCloseBtn}
+              onPress={() => setHelpModalVisible(false)}
+            >
+              <Text style={styles.modalCloseText}>{t("common.cancel")}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={themeModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setThemeModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setThemeModalVisible(false)}
+        >
+          <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.modalTitle}>{t("profile.themeModal.title")}</Text>
+            {(["system", "light", "dark"] as const).map((pref) => (
+              <Pressable
+                key={pref}
+                style={[styles.langOption, themePreference === pref && styles.langOptionActive]}
+                onPress={() => {
+                  setThemePreference(pref);
+                  setThemeModalVisible(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.langOptionText,
+                    themePreference === pref && styles.langOptionTextActive,
+                  ]}
+                >
+                  {pref === "system"
+                    ? t("profile.themeSystem")
+                    : pref === "light"
+                      ? t("profile.themeLight")
+                      : t("profile.themeDark")}
+                </Text>
+              </Pressable>
+            ))}
+            <Pressable
+              style={styles.modalCloseBtn}
+              onPress={() => setThemeModalVisible(false)}
+            >
+              <Text style={styles.modalCloseText}>{t("common.cancel")}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-  header: {
-    alignItems: "center",
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-  },
-  avatarWrap: {
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: COLORS.accent,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: COLORS.bg,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: COLORS.text,
-  },
-  email: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    marginTop: 4,
-  },
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 24,
-    marginBottom: 24,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: COLORS.accent,
-  },
-  statLabel: {
-    fontSize: 13,
-    color: COLORS.textMuted,
-    marginTop: 4,
-  },
-  section: {
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: COLORS.textMuted,
-    marginBottom: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.surface,
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  menuItemPressed: {
-    opacity: 0.7,
-  },
-  menuLabel: {
-    flex: 1,
-    fontSize: 16,
-    color: COLORS.text,
-    marginLeft: 14,
-  },
-});

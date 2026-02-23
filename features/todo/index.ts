@@ -1,4 +1,5 @@
 export { AddTodoModal } from "./components/AddTodoModal";
+export { DatePickerWidget } from "./components/DatePickerWidget";
 export { TodoCard } from "./components/TodoCard";
 export { TodoEditModal } from "./components/TodoEditModal";
 export { TodoInput } from "./components/TodoInput";

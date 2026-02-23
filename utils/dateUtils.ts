@@ -1,6 +1,14 @@
-const TURKISH_MONTHS = [
-  "Oca", "Şub", "Mar", "Nis", "May", "Haz",
-  "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara",
+import i18n from "../i18n";
+
+/** Parses YYYY-MM-DD string as local date (avoids UTC midnight timezone shift) */
+export function parseDateLocal(dateStr: string): Date {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
+}
+
+const MONTH_KEYS = [
+  "jan", "feb", "mar", "apr", "may", "jun",
+  "jul", "aug", "sep", "oct", "nov", "dec",
 ];
 
 export function formatReminderDate(isoString: string): string {
@@ -23,11 +31,11 @@ export function formatReminderDate(isoString: string): string {
   const minutes = date.getMinutes().toString().padStart(2, "0");
   const time = `${hours}:${minutes}`;
 
-  if (isToday) return `Bugün ${time}`;
-  if (isTomorrow) return `Yarın ${time}`;
+  if (isToday) return `${i18n.t("dateUtils.today")} ${time}`;
+  if (isTomorrow) return `${i18n.t("dateUtils.tomorrow")} ${time}`;
 
   const day = date.getDate();
-  const month = TURKISH_MONTHS[date.getMonth()];
+  const month = i18n.t(`months.${MONTH_KEYS[date.getMonth()]}`);
   return `${day} ${month} ${time}`;
 }
 
@@ -43,7 +51,7 @@ export function combineDateAndTime(date: Date, time: Date): Date {
 
 export function formatDateShort(date: Date): string {
   const day = date.getDate();
-  const month = TURKISH_MONTHS[date.getMonth()];
+  const month = i18n.t(`months.${MONTH_KEYS[date.getMonth()]}`);
   const year = date.getFullYear();
   return `${day} ${month} ${year}`;
 }

@@ -1,31 +1,34 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { COLORS } from "../../constants/theme";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function TabLayout() {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.surface,
-          borderTopColor: COLORS.border,
-          borderTopWidth: 1,
+          backgroundColor: colors.bg,
+          borderTopColor: colors.border,
+          borderTopWidth: 0,
         },
-        tabBarActiveTintColor: COLORS.accent,
-        tabBarInactiveTintColor: COLORS.textMuted,
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarShowLabel: true,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Tasks",
+          title: t("tabs.tasks"),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "checkbox" : "checkbox-outline"}
               size={22}
-              color={focused ? COLORS.accent : color}
+              color={focused ? colors.accent : color}
             />
           ),
         }}
@@ -33,12 +36,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Profile",
+          title: t("tabs.settings"),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? "person" : "person-outline"}
+              name={focused ? "settings" : "settings-outline"}
               size={22}
-              color={focused ? COLORS.accent : color}
+              color={focused ? colors.accent : color}
             />
           ),
         }}

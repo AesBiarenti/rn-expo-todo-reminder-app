@@ -1,17 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker, {
-  DateTimePickerAndroid,
-} from "@react-native-community/datetimepicker";
-import { useState } from "react";
-import {
-  Keyboard,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-} from "react-native";
+import { useMemo, useState } from "react";
+import { Keyboard, Pressable, StyleSheet, TextInput } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { COLORS } from "../../../constants/theme";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "../../../context/ThemeContext";
+import { CustomDatePicker, CustomTimePicker } from "./DateTimePicker";
+import { combineDateAndTime } from "../../../utils/dateUtils";
 
 interface TodoInputProps {
   value: string;
@@ -20,8 +14,11 @@ interface TodoInputProps {
 }
 
 export function TodoInput({ value, onChangeText, onAdd }: TodoInputProps) {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   const [reminderMode, setReminderMode] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempDate, setTempDate] = useState(
     () => new Date(Date.now() + 3600000),
   );
@@ -38,34 +35,67 @@ export function TodoInput({ value, onChangeText, onAdd }: TodoInputProps) {
     if (!trimmed) return;
 
     if (reminderMode) {
-      if (Platform.OS === "android") {
-        DateTimePickerAndroid.open({
-          value: tempDate,
-          mode: "date",
-          minimumDate: new Date(),
-          onChange: (_, date) => {
-            if (date) {
-              handleAdd(date.toISOString());
-              setReminderMode(false);
-            }
-          },
-        });
-      } else {
-        setShowDatePicker(true);
-      }
+      setShowDatePicker(true);
     } else {
       handleAdd();
     }
   };
 
-  const handleDateChange = (_: unknown, date?: Date) => {
-    if (Platform.OS === "android") return;
-    if (date) {
-      handleAdd(date.toISOString());
-      setShowDatePicker(false);
-      setReminderMode(false);
-    }
+  const handleDateSelect = (date: Date) => {
+    setTempDate(date);
+    setShowDatePicker(false);
+    setShowTimePicker(true);
   };
+
+  const handleTimeSelect = (time: Date) => {
+    const combined = combineDateAndTime(tempDate, time);
+    handleAdd(combined.toISOString());
+    setShowTimePicker(false);
+    setReminderMode(false);
+  };
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        inputWrap: {
+          flexDirection: "row",
+          gap: 12,
+          paddingHorizontal: 20,
+          marginBottom: 20,
+        },
+        input: {
+          flex: 1,
+          backgroundColor: colors.surface,
+          borderRadius: 20,
+          paddingHorizontal: 18,
+          paddingVertical: 14,
+          fontSize: 16,
+          color: colors.text,
+        },
+        bellBtn: {
+          width: 52,
+          height: 52,
+          borderRadius: 18,
+          backgroundColor: colors.surface,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        bellBtnActive: {
+          backgroundColor: colors.accentDim,
+        },
+        addBtn: {
+          width: 52,
+          height: 52,
+          borderRadius: 18,
+          backgroundColor: colors.accent,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        addBtnPressed: { opacity: 0.85 },
+        pressed: { opacity: 0.7 },
+      }),
+    [colors],
+  );
 
   return (
     <Animated.View
@@ -74,8 +104,8 @@ export function TodoInput({ value, onChangeText, onAdd }: TodoInputProps) {
     >
       <TextInput
         style={styles.input}
-        placeholder="What needs to be done?"
-        placeholderTextColor={COLORS.textMuted}
+        placeholder={t("addModal.placeholder")}
+        placeholderTextColor={colors.textMuted}
         value={value}
         onChangeText={onChangeText}
         onSubmitEditing={() => {
@@ -98,7 +128,7 @@ export function TodoInput({ value, onChangeText, onAdd }: TodoInputProps) {
         <Ionicons
           name={reminderMode ? "alarm" : "alarm-outline"}
           size={22}
-          color={reminderMode ? COLORS.accent : COLORS.textMuted}
+          color={reminderMode ? colors.accent : colors.textMuted}
         />
       </Pressable>
       <Pressable
@@ -108,65 +138,29 @@ export function TodoInput({ value, onChangeText, onAdd }: TodoInputProps) {
           pressed && styles.addBtnPressed,
         ]}
       >
-        <Ionicons name="add" size={24} color={COLORS.bg} />
+        <Ionicons name="add" size={24} color={colors.bg} />
       </Pressable>
-      {showDatePicker && Platform.OS === "ios" && (
-        <DateTimePicker
+      {showDatePicker && (
+        <CustomDatePicker
+          visible={showDatePicker}
           value={tempDate}
-          mode="datetime"
-          display="spinner"
           minimumDate={new Date()}
-          onChange={handleDateChange}
+          onSelect={handleDateSelect}
+          onClose={() => {
+            setShowDatePicker(false);
+          }}
+        />
+      )}
+      {showTimePicker && (
+        <CustomTimePicker
+          visible={showTimePicker}
+          value={tempDate}
+          onSelect={handleTimeSelect}
+          onClose={() => {
+            setShowTimePicker(false);
+          }}
         />
       )}
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  inputWrap: {
-    flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 24,
-    marginBottom: 20,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  bellBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  bellBtnActive: {
-    backgroundColor: COLORS.accentDim,
-    borderColor: COLORS.accent,
-  },
-  addBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
-    backgroundColor: COLORS.accent,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addBtnPressed: {
-    opacity: 0.8,
-  },
-  pressed: {
-    opacity: 0.6,
-  },
-});

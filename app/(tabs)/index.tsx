@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
+import { useTheme } from "../../context/ThemeContext";
+import { useTranslation } from "react-i18next";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -8,76 +10,130 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  View,
 } from "react-native";
-import Animated, { FadeIn, FadeInDown, FadeOut } from "react-native-reanimated";
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   AddTodoModal,
+  DatePickerWidget,
   TodoCard,
   TodoEditModal,
-  TodoFilterBar,
   useTodoActions,
   useTodoList,
-  type FilterType,
-  type SortType,
 } from "../../features/todo";
+import {
+  getDateStringsWithTasks,
+  isTaskActiveOnDate,
+} from "../../utils/scheduleUtils";
 import { RectButton, Swipeable } from "react-native-gesture-handler";
-import type {
-  CategoryId,
-  Priority,
-  TodoModel,
-} from "../../types/todo";
-import { COLORS } from "../../constants/theme";
+import type { AddTodoParams } from "../../store/todoStore";
+import type { TodoModel } from "../../types/todo";
+import type { TodoEditUpdates } from "../../features/todo/components/TodoEditModal";
+
+function toDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, "0");
+  const d = date.getDate().toString().padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const [modalVisible, setModalVisible] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const searchExpandProgress = useSharedValue(0);
+  const [searchMaxWidth, setSearchMaxWidth] = useState(200);
   const [editingTodo, setEditingTodo] = useState<TodoModel | null>(null);
-  const [filter, setFilter] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<CategoryId | undefined>();
-  const [sortBy, setSortBy] = useState<SortType>("created");
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   const { filteredTodos, activeCount, todos } = useTodoList(
-    filter,
+    "all",
     searchQuery,
-    categoryFilter,
-    sortBy,
   );
 
-  const usedCategoryIds = useMemo(
+  const fromDate = useMemo(() => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 7);
+    return d;
+  }, [selectedDate]);
+  const toDate = useMemo(() => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 60);
+    return d;
+  }, [selectedDate]);
+  const datesWithTasks = useMemo(
+    () => getDateStringsWithTasks(todos, fromDate, toDate),
+    [todos, fromDate, toDate],
+  );
+
+  const selectedDateStr = toDateStr(selectedDate);
+  const todosForSelectedDate = useMemo(
     () =>
-      [...new Set(todos.map((t) => t.categoryId).filter(Boolean))] as CategoryId[],
-    [todos],
+      filteredTodos.filter(
+        (t) =>
+          t.scheduleType === "shopping_list" ||
+          isTaskActiveOnDate(t, selectedDateStr)
+      ),
+    [filteredTodos, selectedDateStr],
   );
 
   const {
     toggleTodo,
+    toggleTodoSlot,
+    toggleChecklistItem,
     deleteTodo,
     clearCompleted,
     handleAdd,
     updateTodo,
   } = useTodoActions();
 
-  const handleModalAdd = (
-    text: string,
-    reminderAt?: string,
-    priority?: Priority,
-    categoryId?: CategoryId,
-  ) => {
-    handleAdd(text, () => setModalVisible(false), reminderAt, priority, categoryId);
+  const handleModalAdd = (params: AddTodoParams) => {
+    handleAdd(params, () => setModalVisible(false));
   };
 
-  const handleEditSave = (updates: {
-    text: string;
-    reminderAt: string | null;
-    priority?: Priority;
-    categoryId?: CategoryId;
-  }) => {
+  const handleEditSave = (updates: TodoEditUpdates) => {
     if (!editingTodo) return;
     updateTodo(editingTodo.id, updates);
     setEditingTodo(null);
   };
+
+  const expandSearch = () => {
+    setSearchExpanded(true);
+    searchExpandProgress.value = withTiming(1, {
+      duration: 280,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    });
+  };
+
+  const collapseSearch = () => {
+    if (!searchQuery.trim()) {
+      searchExpandProgress.value = withTiming(
+        0,
+        { duration: 220 },
+        (finished) => {
+          if (finished) runOnJS(setSearchExpanded)(false);
+        },
+      );
+    }
+  };
+
+  const searchAnimatedStyle = useAnimatedStyle(() => ({
+    width: interpolate(searchExpandProgress.value, [0, 1], [44, searchMaxWidth]),
+  }));
 
   const renderRightActions = (
     _progress: unknown,
@@ -88,8 +144,8 @@ export default function HomeScreen() {
       style={styles.swipeDelete}
       onPress={() => deleteTodo(item.id)}
     >
-      <Ionicons name="trash-outline" size={22} color={COLORS.bg} />
-      <Text style={styles.swipeDeleteText}>Sil</Text>
+      <Ionicons name="trash-outline" size={22} color={colors.bg} />
+      <Text style={styles.swipeDeleteText}>{t("common.delete")}</Text>
     </RectButton>
   );
 
@@ -104,58 +160,215 @@ export default function HomeScreen() {
         item={item}
         index={index}
         onToggle={toggleTodo}
+        onToggleSlot={toggleTodoSlot}
+        onToggleChecklistItem={toggleChecklistItem}
         onDelete={deleteTodo}
         onEdit={setEditingTodo}
       />
     </Swipeable>
   );
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: colors.bg },
+        header: { marginBottom: 2 },
+        title: {
+          fontSize: 28,
+          fontWeight: "700",
+          color: colors.text,
+          letterSpacing: -0.6,
+          lineHeight: 34,
+        },
+        subtitle: {
+          fontSize: 14,
+          color: colors.textMuted,
+          marginTop: 2,
+          fontWeight: "400",
+        },
+        list: { paddingHorizontal: 20, paddingBottom: 32, flexGrow: 1 },
+        listEmpty: { flex: 1, justifyContent: "center" },
+        emptyState: { alignItems: "center", paddingVertical: 64 },
+        emptyIconWrap: {
+          width: 80,
+          height: 80,
+          borderRadius: 44,
+          backgroundColor: colors.surface,
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 16,
+        },
+        emptyText: {
+          fontSize: 17,
+          fontWeight: "500",
+          color: colors.textMuted,
+          marginTop: 4,
+          textAlign: "center",
+        },
+        emptyHint: {
+          fontSize: 15,
+          color: colors.textMuted,
+          opacity: 0.8,
+          marginTop: 8,
+          textAlign: "center",
+          paddingHorizontal: 32,
+        },
+        pressed: { opacity: 0.7 },
+        headerRow: {
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          paddingHorizontal: 20,
+          paddingTop: 16,
+          paddingBottom: 12,
+        },
+        headerLeft: { flexShrink: 0 },
+        headerActions: {
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 8,
+          minWidth: 0,
+        },
+        searchBtn: {
+          width: 44,
+          height: 44,
+          borderRadius: 18,
+          backgroundColor: colors.surface,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        searchInputWrap: {
+          height: 44,
+          borderRadius: 18,
+          backgroundColor: colors.surface,
+          overflow: "hidden",
+        },
+        addTaskBtn: {
+          width: 44,
+          height: 44,
+          borderRadius: 18,
+          backgroundColor: colors.accent,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        searchInput: {
+          flex: 1,
+          height: 44,
+          paddingHorizontal: 14,
+          paddingVertical: 0,
+          fontSize: 15,
+          color: colors.text,
+        },
+        clearBtn: {
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          paddingVertical: 18,
+        },
+        clearText: { fontSize: 15, fontWeight: "500", color: colors.danger },
+        swipeDelete: {
+          backgroundColor: colors.danger,
+          justifyContent: "center",
+          alignItems: "center",
+          width: 88,
+          marginBottom: 10,
+          borderRadius: 24,
+        },
+        swipeDeleteText: {
+          color: colors.bg,
+          fontSize: 14,
+          fontWeight: "600",
+          marginTop: 4,
+        },
+      }),
+    [colors],
+  );
+
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top }]}
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={0}
     >
       <Animated.View
         entering={FadeInDown.duration(350)}
-        style={styles.header}
+        style={[styles.header, { paddingTop: insets.top }]}
       >
-        <Text style={styles.title}>Tasks</Text>
-        <Text style={styles.subtitle}>
-          {activeCount} {activeCount === 1 ? "task" : "tasks"} remaining
-        </Text>
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>{t("home.title")}</Text>
+            <Text style={styles.subtitle}>
+              {t(activeCount === 1 ? "home.subtitle_one" : "home.subtitle", {
+                count: activeCount,
+              })}
+            </Text>
+          </View>
+          <View
+            style={styles.headerActions}
+            onLayout={(e) => {
+              const w = e.nativeEvent.layout.width;
+              if (w > 0) setSearchMaxWidth(Math.max(120, w - 52));
+            }}
+          >
+            <Animated.View
+              style={[
+                styles.searchInputWrap,
+                searchAnimatedStyle,
+              ]}
+            >
+              {searchExpanded ? (
+                <View style={{ flex: 1, flexDirection: "row", alignItems: "center" }}>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder={t("home.searchPlaceholder")}
+                    placeholderTextColor={colors.textMuted}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    onBlur={collapseSearch}
+                    returnKeyType="search"
+                    autoFocus
+                  />
+                  <Pressable
+                    onPress={() => {
+                      setSearchQuery("");
+                      searchExpandProgress.value = withTiming(
+                        0,
+                        { duration: 220 },
+                        (finished) => {
+                          if (finished) runOnJS(setSearchExpanded)(false);
+                        },
+                      );
+                    }}
+                    style={{ padding: 8 }}
+                  >
+                    <Ionicons name="close-circle" size={20} color={colors.textMuted} />
+                  </Pressable>
+                </View>
+              ) : (
+                <Pressable
+                  onPress={expandSearch}
+                  style={({ pressed }) => [
+                    styles.searchBtn,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Ionicons name="search" size={22} color={colors.textMuted} />
+                </Pressable>
+              )}
+            </Animated.View>
+            <Pressable
+              onPress={() => setModalVisible(true)}
+              style={({ pressed }) => [styles.addTaskBtn, pressed && styles.pressed]}
+            >
+              <Ionicons name="add" size={24} color={colors.bg} />
+            </Pressable>
+          </View>
+        </View>
       </Animated.View>
-
-      <Pressable
-        onPress={() => setModalVisible(true)}
-        style={({ pressed }) => [
-          styles.addTaskBtn,
-          pressed && styles.pressed,
-          { marginHorizontal: 24, marginBottom: 12 },
-        ]}
-      >
-        <Ionicons name="add" size={24} color={COLORS.bg} />
-        <Text style={styles.addTaskBtnText}>Add Task</Text>
-      </Pressable>
-
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Ara..."
-        placeholderTextColor={COLORS.textMuted}
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        returnKeyType="search"
-      />
-
-      <TodoFilterBar
-        filter={filter}
-        onFilterChange={setFilter}
-        categoryFilter={categoryFilter}
-        onCategoryFilterChange={setCategoryFilter}
-        usedCategoryIds={usedCategoryIds}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-      />
 
       <AddTodoModal
         visible={modalVisible}
@@ -170,41 +383,37 @@ export default function HomeScreen() {
         onClose={() => setEditingTodo(null)}
       />
 
+      <DatePickerWidget
+        selectedDate={selectedDate}
+        onDateSelect={setSelectedDate}
+        datesWithTasks={datesWithTasks}
+      />
+
       <FlatList
-        data={filteredTodos}
+        data={todosForSelectedDate}
         renderItem={renderTodo}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
           styles.list,
-          filteredTodos.length === 0 && styles.listEmpty,
+          todosForSelectedDate.length === 0 && styles.listEmpty,
         ]}
         ListEmptyComponent={
           <Animated.View
             entering={FadeIn.delay(200).duration(500)}
             style={styles.emptyState}
           >
-            <Ionicons
-              name={
-                filter === "completed"
-                  ? "checkmark-circle-outline"
-                  : filter === "active"
-                    ? "time-outline"
-                    : "document-text-outline"
-              }
-              size={48}
-              color={COLORS.textMuted}
-            />
+            <View style={styles.emptyIconWrap}>
+              <Ionicons
+                name="document-text-outline"
+                size={36}
+                color={colors.textMuted}
+              />
+            </View>
             <Text style={styles.emptyText}>
-              {filter === "completed"
-                ? "No completed tasks"
-                : filter === "active"
-                  ? "No active tasks"
-                  : "No tasks yet"}
+              {t("home.emptyStates.noTasks")}
             </Text>
             <Text style={styles.emptyHint}>
-              {filter === "all"
-                ? "Add one above to get started"
-                : "Try a different filter"}
+              {t("home.emptyStates.addFirst")}
             </Text>
           </Animated.View>
         }
@@ -224,11 +433,11 @@ export default function HomeScreen() {
             ]}
           >
             <Ionicons
-              name="close-circle-outline"
-              size={18}
-              color={COLORS.danger}
+            name="close-circle-outline"
+            size={18}
+            color={colors.danger}
             />
-            <Text style={styles.clearText}>Clear completed</Text>
+            <Text style={styles.clearText}>{t("home.clearCompleted")}</Text>
           </Pressable>
         </Animated.View>
       )}
@@ -236,106 +445,3 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-  },
-  header: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: COLORS.text,
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    marginTop: 4,
-  },
-  list: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-    flexGrow: 1,
-  },
-  listEmpty: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 48,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: COLORS.textMuted,
-    marginTop: 12,
-  },
-  emptyHint: {
-    fontSize: 14,
-    color: COLORS.textMuted,
-    opacity: 0.7,
-    marginTop: 4,
-  },
-  pressed: {
-    opacity: 0.6,
-  },
-  addTaskBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    backgroundColor: COLORS.accent,
-    borderRadius: 12,
-  },
-  addTaskBtnText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.bg,
-  },
-  searchInput: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: COLORS.text,
-    marginHorizontal: 24,
-    marginBottom: 12,
-  },
-  clearBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 16,
-  },
-  clearText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: COLORS.danger,
-  },
-  swipeDelete: {
-    backgroundColor: COLORS.danger,
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    marginBottom: 8,
-    borderRadius: 12,
-  },
-  swipeDeleteText: {
-    color: COLORS.bg,
-    fontSize: 14,
-    fontWeight: "600",
-    marginTop: 4,
-  },
-});

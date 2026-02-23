@@ -1,0 +1,235 @@
+{
+  "common": {
+    "add": "Ekle",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "back": "Geri",
+    "next": "İleri",
+    "search": "Ara",
+    "today": "Bugün",
+    "expand": "Genişlet",
+    "collapse": "Daralt"
+  },
+  "tabs": {
+    "tasks": "Görevler",
+    "profile": "Profil",
+    "settings": "Ayarlar"
+  },
+  "home": {
+    "title": "Görevler",
+    "subtitle": "{{count}} kaldı",
+    "subtitle_one": "{{count}} görev kaldı",
+    "addTask": "Görev Ekle",
+    "clearCompleted": "Tamamlananları temizle",
+    "searchPlaceholder": "Ara...",
+    "swipeToDeleteHint": "Sola kaydırarak sil",
+    "emptyStates": {
+      "noTasks": "Henüz görev yok",
+      "noActive": "Bekleyen görev yok",
+      "noCompleted": "Tamamlanan görev yok",
+      "addFirst": "Başlamak için yukarıdan ekleyin",
+      "tryFilter": "Farklı bir filtre deneyin"
+    }
+  },
+  "profile": {
+    "user": "Kullanıcı",
+    "email": "user@example.com",
+    "tapToEdit": "Düzenlemek için dokun",
+    "total": "Toplam",
+    "completed": "Tamamlanan",
+    "pending": "Bekleyen",
+    "settings": "Ayarlar",
+    "notificationsDesc": "Hatırlatıcı bildirimleri",
+    "themeDesc": "Uygulama teması",
+    "themeDark": "Koyu",
+    "themeLight": "Açık",
+    "themeSystem": "Sistem",
+    "data": "Veri",
+    "clearCompleted": "Tamamlananları temizle",
+    "clearCompletedConfirm": "Tamamlanan {{count}} görev silinecek. Emin misiniz?",
+    "cleared": "Temizlendi",
+    "about": "Hakkında",
+    "version": "Sürüm",
+    "tips": "İpuçları",
+    "tip1": "• Görev eklemek için + butonuna basın",
+    "tip2": "• Görevlere uzun basarak düzenleyebilirsiniz",
+    "tip3": "• Kaydırarak silebilirsiniz",
+    "tip4": "• Filtrelerle görevlerinizi gruplayın",
+    "menuItems": {
+      "notifications": "Bildirimler",
+      "darkMode": "Tema",
+      "language": "Dil",
+      "help": "Yardım"
+    },
+    "languageModal": {
+      "title": "Dil Seçin",
+      "turkish": "Türkçe",
+      "english": "English"
+    },
+    "editNameModal": {
+      "title": "İsim Düzenle",
+      "placeholder": "Adınız"
+    },
+    "editEmailModal": {
+      "title": "E-posta Düzenle",
+      "placeholder": "E-posta adresiniz"
+    },
+    "helpModal": {
+      "title": "Yardım"
+    },
+    "themeModal": {
+      "title": "Tema Seçin"
+    }
+  },
+  "filters": {
+    "all": "Tümü",
+    "active": "Bekleyen",
+    "completed": "Tamamlanan",
+    "allTypes": "Tüm türler",
+    "allCategories": "Tüm kategoriler",
+    "showFilters": "Filtreler",
+    "hideFilters": "Gizle",
+    "sortBy": {
+      "created": "Eklenme",
+      "reminder": "Hatırlatıcı",
+      "priority": "Öncelik",
+      "textAZ": "A-Z"
+    }
+  },
+  "scheduleTypes": {
+    "oneTime": "Tek Seferlik",
+    "dailyRoutine": "Günlük Rutin",
+    "ongoing": "Devamlı",
+    "shoppingList": "Alacaklar Listesi",
+    "recurring": "Tekrarlayan",
+    "weeklyDays": "Haftalık Günler",
+    "oneTimeShort": "Tek",
+    "dailyRoutineShort": "Rutin",
+    "ongoingShort": "Devamlı",
+    "shoppingListShort": "Liste",
+    "recurringShort": "Tekrarlayan",
+    "weeklyDaysShort": "Haftalık"
+  },
+  "priorities": {
+    "low": "Düşük",
+    "medium": "Orta",
+    "high": "Yüksek"
+  },
+  "categories": {
+    "work": "İş",
+    "personal": "Kişisel",
+    "shopping": "Alışveriş",
+    "health": "Sağlık",
+    "other": "Diğer"
+  },
+  "weekdays": {
+    "sun": "Paz",
+    "mon": "Pzt",
+    "tue": "Sal",
+    "wed": "Çar",
+    "thu": "Per",
+    "fri": "Cum",
+    "sat": "Cmt"
+  },
+  "months": {
+    "jan": "Oca",
+    "feb": "Şub",
+    "mar": "Mar",
+    "apr": "Nis",
+    "may": "May",
+    "jun": "Haz",
+    "jul": "Tem",
+    "aug": "Ağu",
+    "sep": "Eyl",
+    "oct": "Eki",
+    "nov": "Kas",
+    "dec": "Ara"
+  },
+  "recurrenceTypes": {
+    "weekly": "Haftalık",
+    "monthly": "Aylık",
+    "yearly": "Yıllık"
+  },
+  "addModal": {
+    "step1": "Adım 1: Görev",
+    "step2": "Adım 2: Task Türü",
+    "step3": "Adım 3: {{label}}",
+    "scheduling": "Zamanlama",
+    "placeholder": "Ne yapılacak?",
+    "priority": "Öncelik",
+    "category": "Kategori",
+    "selectType": "Task türünü seçin",
+    "selectDateAndTime": "Tarih ve saat seçin",
+    "date": "Tarih",
+    "time": "Saat",
+    "selectDate": "Tarih seç",
+    "selectTime": "Saat seç",
+    "selectDateOptional": "Tarih seç (opsiyonel)",
+    "startDate": "Başlangıç tarihi",
+    "endDate": "Bitiş tarihi (opsiyonel)",
+    "start": "Başlangıç",
+    "end": "Bitiş",
+    "dailyTimesRequired": "Günlük saatler (en az bir)",
+    "dailyTimesOptional": "Günlük saatler (opsiyonel)",
+    "addTime": "Saat Ekle",
+    "addAtLeastOne": "En az bir saat ekleyin",
+    "checklistHint": "Liste maddelerini ekleyin (opsiyonel)",
+    "checklistPlaceholder": "Süt, ekmek...",
+    "recurrenceType": "Tekrar türü",
+    "dayOfWeek": "Haftanın günü",
+    "dayOfMonth": "Ayın kaçıncı günü (1-31)",
+    "month": "Ay",
+    "defaultTimeHint": "Saat eklenmezse 09:00 kullanılır",
+    "weekdays": "Haftanın günleri",
+    "timesOptional": "Saatler (opsiyonel)",
+    "cancel": "İptal",
+    "back": "Geri",
+    "next": "İleri",
+    "add": "Ekle"
+  },
+  "editModal": {
+    "title": "Düzenle",
+    "taskPlaceholder": "Görev metni",
+    "reminder": "Hatırlatıcı",
+    "scheduling": "Zamanlama",
+    "taskType": "Task Türü",
+    "listItems": "Liste maddeleri",
+    "addItem": "Madde ekle",
+    "recurrence": "Tekrarlama",
+    "cancel": "İptal",
+    "save": "Kaydet"
+  },
+  "scheduleUtils": {
+    "dateNotSet": "Tarih belirtilmedi",
+    "startNotSet": "Başlangıç belirtilmedi",
+    "timeNotSet": "Saat belirtilmedi",
+    "everyDay": "Her gün",
+    "fromOngoing": "itibaren devamlı",
+    "itemsCount": "{{done}}/{{total}} madde",
+    "every": "Her",
+    "everyMonthDay": "Her ayın {{day}}. günü",
+    "everyYear": "Her yıl",
+    "recurrenceNotSet": "Tekrarlama belirtilmedi",
+    "dayNotSelected": "Gün seçilmedi"
+  },
+  "datePicker": {
+    "day": "Gün",
+    "month": "Ay",
+    "year": "Yıl",
+    "hour": "Saat",
+    "minute": "Dakika"
+  },
+  "dateUtils": {
+    "today": "Bugün",
+    "tomorrow": "Yarın"
+  },
+  "notifications": {
+    "channelName": "Hatırlatıcılar",
+    "reminderTitle": "Hatırlatıcı"
+  },
+  "todoCard": {
+    "today": "Bugün:"
+  }
+}

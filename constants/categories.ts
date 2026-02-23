@@ -1,13 +1,14 @@
+import i18n from "../i18n";
 import type { CategoryId } from "../types/todo";
 
-export const CATEGORIES: { id: CategoryId; label: string }[] = [
-  { id: "work", label: "İş" },
-  { id: "personal", label: "Kişisel" },
-  { id: "shopping", label: "Alışveriş" },
-  { id: "health", label: "Sağlık" },
-  { id: "other", label: "Diğer" },
+export const CATEGORIES: { id: CategoryId }[] = [
+  { id: "work" },
+  { id: "personal" },
+  { id: "shopping" },
+  { id: "health" },
+  { id: "other" },
 ];
 
 export function getCategoryLabel(id: CategoryId): string {
-  return CATEGORIES.find((c) => c.id === id)?.label ?? id;
+  return i18n.t(`categories.${id}`);
 }

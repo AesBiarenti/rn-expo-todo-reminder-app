@@ -47,11 +47,16 @@
           "color": "#22C55E"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "autolinking": {
+      "exclude": [
+        "expo-keep-awake"
+      ]
     }
   }
 }

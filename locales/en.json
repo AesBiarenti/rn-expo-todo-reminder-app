@@ -1,0 +1,235 @@
+{
+  "common": {
+    "add": "Add",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "today": "Today",
+    "expand": "Expand",
+    "collapse": "Collapse"
+  },
+  "tabs": {
+    "tasks": "Tasks",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "home": {
+    "title": "Tasks",
+    "subtitle": "{{count}} remaining",
+    "subtitle_one": "{{count}} task remaining",
+    "addTask": "Add Task",
+    "clearCompleted": "Clear completed",
+    "searchPlaceholder": "Search...",
+    "swipeToDeleteHint": "Swipe left to delete",
+    "emptyStates": {
+      "noTasks": "No tasks yet",
+      "noActive": "No active tasks",
+      "noCompleted": "No completed tasks",
+      "addFirst": "Add one above to get started",
+      "tryFilter": "Try a different filter"
+    }
+  },
+  "profile": {
+    "user": "User",
+    "email": "user@example.com",
+    "tapToEdit": "Tap to edit",
+    "total": "Total",
+    "completed": "Completed",
+    "pending": "Pending",
+    "settings": "Settings",
+    "notificationsDesc": "Reminder notifications",
+    "themeDesc": "App theme",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "themeSystem": "System",
+    "data": "Data",
+    "clearCompleted": "Clear completed",
+    "clearCompletedConfirm": "{{count}} completed tasks will be deleted. Are you sure?",
+    "cleared": "Cleared",
+    "about": "About",
+    "version": "Version",
+    "tips": "Tips",
+    "tip1": "• Tap + to add a task",
+    "tip2": "• Long press tasks to edit",
+    "tip3": "• Swipe to delete",
+    "tip4": "• Use filters to organize tasks",
+    "menuItems": {
+      "notifications": "Notifications",
+      "darkMode": "Theme",
+      "language": "Language",
+      "help": "Help"
+    },
+    "languageModal": {
+      "title": "Select Language",
+      "turkish": "Türkçe",
+      "english": "English"
+    },
+    "editNameModal": {
+      "title": "Edit Name",
+      "placeholder": "Your name"
+    },
+    "editEmailModal": {
+      "title": "Edit Email",
+      "placeholder": "Your email address"
+    },
+    "helpModal": {
+      "title": "Help"
+    },
+    "themeModal": {
+      "title": "Select Theme"
+    }
+  },
+  "filters": {
+    "all": "All",
+    "active": "Active",
+    "completed": "Completed",
+    "allTypes": "All types",
+    "allCategories": "All categories",
+    "showFilters": "Filters",
+    "hideFilters": "Hide",
+    "sortBy": {
+      "created": "Added",
+      "reminder": "Reminder",
+      "priority": "Priority",
+      "textAZ": "A-Z"
+    }
+  },
+  "scheduleTypes": {
+    "oneTime": "One-time",
+    "dailyRoutine": "Daily Routine",
+    "ongoing": "Ongoing",
+    "shoppingList": "Shopping List",
+    "recurring": "Recurring",
+    "weeklyDays": "Weekly Days",
+    "oneTimeShort": "One",
+    "dailyRoutineShort": "Routine",
+    "ongoingShort": "Ongoing",
+    "shoppingListShort": "List",
+    "recurringShort": "Recurring",
+    "weeklyDaysShort": "Weekly"
+  },
+  "priorities": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "categories": {
+    "work": "Work",
+    "personal": "Personal",
+    "shopping": "Shopping",
+    "health": "Health",
+    "other": "Other"
+  },
+  "weekdays": {
+    "sun": "Sun",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat"
+  },
+  "months": {
+    "jan": "Jan",
+    "feb": "Feb",
+    "mar": "Mar",
+    "apr": "Apr",
+    "may": "May",
+    "jun": "Jun",
+    "jul": "Jul",
+    "aug": "Aug",
+    "sep": "Sep",
+    "oct": "Oct",
+    "nov": "Nov",
+    "dec": "Dec"
+  },
+  "recurrenceTypes": {
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "yearly": "Yearly"
+  },
+  "addModal": {
+    "step1": "Step 1: Task",
+    "step2": "Step 2: Task Type",
+    "step3": "Step 3: {{label}}",
+    "scheduling": "Scheduling",
+    "placeholder": "What needs to be done?",
+    "priority": "Priority",
+    "category": "Category",
+    "selectType": "Select task type",
+    "selectDateAndTime": "Select date and time",
+    "date": "Date",
+    "time": "Time",
+    "selectDate": "Select date",
+    "selectTime": "Select time",
+    "selectDateOptional": "Select date (optional)",
+    "startDate": "Start date",
+    "endDate": "End date (optional)",
+    "start": "Start",
+    "end": "End",
+    "dailyTimesRequired": "Daily times (at least one)",
+    "dailyTimesOptional": "Daily times (optional)",
+    "addTime": "Add Time",
+    "addAtLeastOne": "Add at least one time",
+    "checklistHint": "Add list items (optional)",
+    "checklistPlaceholder": "Milk, bread...",
+    "recurrenceType": "Recurrence type",
+    "dayOfWeek": "Day of week",
+    "dayOfMonth": "Day of month (1-31)",
+    "month": "Month",
+    "defaultTimeHint": "09:00 will be used if no time added",
+    "weekdays": "Weekdays",
+    "timesOptional": "Times (optional)",
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "add": "Add"
+  },
+  "editModal": {
+    "title": "Edit",
+    "taskPlaceholder": "Task text",
+    "reminder": "Reminder",
+    "scheduling": "Scheduling",
+    "taskType": "Task Type",
+    "listItems": "List items",
+    "addItem": "Add item",
+    "recurrence": "Recurrence",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "scheduleUtils": {
+    "dateNotSet": "Date not set",
+    "startNotSet": "Start not set",
+    "timeNotSet": "Time not set",
+    "everyDay": "Every day",
+    "fromOngoing": "ongoing from",
+    "itemsCount": "{{done}}/{{total}} items",
+    "every": "Every",
+    "everyMonthDay": "Day {{day}} of every month",
+    "everyYear": "Every year",
+    "recurrenceNotSet": "Recurrence not set",
+    "dayNotSelected": "No day selected"
+  },
+  "dateUtils": {
+    "today": "Today",
+    "tomorrow": "Tomorrow"
+  },
+  "notifications": {
+    "channelName": "Reminders",
+    "reminderTitle": "Reminder"
+  },
+  "todoCard": {
+    "today": "Today:"
+  },
+  "datePicker": {
+    "day": "Day",
+    "month": "Month",
+    "year": "Year",
+    "hour": "Hour",
+    "minute": "Min"
+  }
+}

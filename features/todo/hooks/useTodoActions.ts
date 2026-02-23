@@ -1,4 +1,4 @@
-import type { CategoryId, Priority } from "../../../types/todo";
+import type { AddTodoParams } from "../../../store/todoStore";
 import { Keyboard } from "react-native";
 import { useTodoStore } from "../../../store/todoStore";
 
@@ -6,20 +6,16 @@ export function useTodoActions() {
   const addTodo = useTodoStore((s) => s.addTodo);
   const updateTodo = useTodoStore((s) => s.updateTodo);
   const toggleTodo = useTodoStore((s) => s.toggleTodo);
+  const toggleTodoSlot = useTodoStore((s) => s.toggleTodoSlot);
+  const toggleChecklistItem = useTodoStore((s) => s.toggleChecklistItem);
   const deleteTodo = useTodoStore((s) => s.deleteTodo);
   const clearCompleted = useTodoStore((s) => s.clearCompleted);
 
-  const handleAdd = (
-    text: string,
-    clearInput: () => void,
-    reminderAt?: string,
-    priority?: Priority,
-    categoryId?: CategoryId,
-  ) => {
-    const trimmed = text.trim();
+  const handleAdd = (params: AddTodoParams, clearInput?: () => void) => {
+    const trimmed = params.text.trim();
     if (!trimmed) return;
-    addTodo(trimmed, reminderAt, priority, categoryId);
-    clearInput();
+    addTodo({ ...params, text: trimmed });
+    clearInput?.();
     Keyboard.dismiss();
   };
 
@@ -27,6 +23,8 @@ export function useTodoActions() {
     addTodo,
     updateTodo,
     toggleTodo,
+    toggleTodoSlot,
+    toggleChecklistItem,
     deleteTodo,
     clearCompleted,
     handleAdd,

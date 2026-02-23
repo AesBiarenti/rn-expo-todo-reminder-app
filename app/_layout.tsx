@@ -1,7 +1,10 @@
+import { ThemeProvider, useTheme } from "../context/ThemeContext";
+import { loadStoredLocale } from "../i18n";
 import * as Notifications from "expo-notifications";
+import * as SplashScreen from "expo-splash-screen";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   rescheduleAllReminders,
@@ -9,13 +12,20 @@ import {
 } from "../services/notificationService";
 import { useTodoStore } from "../store/todoStore";
 
-export default function RootLayout() {
+SplashScreen.preventAutoHideAsync();
+
+function RootLayoutContent() {
   const router = useRouter();
-  const todos = useTodoStore((s) => s.todos);
-  const hasRescheduled = useRef(false);
 
   useEffect(() => {
     setupNotifications();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      await loadStoredLocale();
+      await SplashScreen.hideAsync();
+    })();
   }, []);
 
   useEffect(() => {
@@ -40,20 +50,29 @@ export default function RootLayout() {
   }, [router]);
 
   useEffect(() => {
-    if (hasRescheduled.current) return;
     const timer = setTimeout(() => {
+      const todos = useTodoStore.getState().todos;
       rescheduleAllReminders(todos);
-      hasRescheduled.current = true;
     }, 800);
     return () => clearTimeout(timer);
-  }, [todos]);
+  }, []);
+
+  const { colorScheme } = useTheme();
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="light" />
+      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
       </Stack>
     </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootLayoutContent />
+    </ThemeProvider>
   );
 }

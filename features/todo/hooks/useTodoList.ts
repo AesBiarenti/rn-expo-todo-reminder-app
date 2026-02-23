@@ -1,7 +1,13 @@
 import { useMemo } from "react";
 import { useTodoStore } from "../../../store/todoStore";
-import type { CategoryId, Priority, TodoModel } from "../../../types/todo";
+import type {
+  CategoryId,
+  Priority,
+  TaskScheduleType,
+  TodoModel,
+} from "../../../types/todo";
 import type { FilterType } from "../components/TodoFilterBar";
+import { getNextOccurrence } from "../../../utils/scheduleUtils";
 
 export type SortType = "created" | "reminder" | "priority" | "text";
 
@@ -11,11 +17,18 @@ const PRIORITY_ORDER: Record<Priority, number> = {
   low: 1,
 };
 
+function getSortDate(todo: TodoModel): number {
+  const next = getNextOccurrence(todo);
+  if (next) return next.getTime();
+  return Infinity;
+}
+
 export function useTodoList(
   filter: FilterType,
   searchQuery = "",
   categoryFilter?: CategoryId,
   sortBy: SortType = "created",
+  scheduleTypeFilter?: TaskScheduleType,
 ) {
   const todos = useTodoStore((s) => s.todos);
 
@@ -32,6 +45,10 @@ export function useTodoList(
       result = result.filter((t) => t.categoryId === categoryFilter);
     }
 
+    if (scheduleTypeFilter) {
+      result = result.filter((t) => t.scheduleType === scheduleTypeFilter);
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
       result = result.filter((t) =>
@@ -45,12 +62,11 @@ export function useTodoList(
           return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
-        case "reminder":
-          if (!a.reminderAt) return 1;
-          if (!b.reminderAt) return -1;
-          return (
-            new Date(a.reminderAt).getTime() - new Date(b.reminderAt).getTime()
-          );
+        case "reminder": {
+          const ta = getSortDate(a);
+          const tb = getSortDate(b);
+          return ta - tb;
+        }
         case "priority":
           const pa = PRIORITY_ORDER[a.priority ?? "medium"];
           const pb = PRIORITY_ORDER[b.priority ?? "medium"];
@@ -63,7 +79,7 @@ export function useTodoList(
     });
 
     return result;
-  }, [todos, filter, categoryFilter, searchQuery, sortBy]);
+  }, [todos, filter, categoryFilter, searchQuery, sortBy, scheduleTypeFilter]);
 
   const activeCount = useMemo(
     () => todos.filter((t) => !t.completed).length,
