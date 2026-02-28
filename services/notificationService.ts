@@ -2,7 +2,6 @@ import { Platform } from "react-native";
 import i18n from "../i18n";
 import { getNotificationsEnabled } from "../store/profileStore";
 import type { TodoModel } from "../types/todo";
-import { isReminderPast } from "../utils/dateUtils";
 import { getNotificationDates } from "../utils/scheduleUtils";
 
 const CHANNEL_ID = "reminders";
@@ -21,10 +20,11 @@ async function getNotifications() {
 }
 
 export async function setup(): Promise<void> {
-  const Notifications = await getNotifications();
-  if (!Notifications) return;
+  try {
+    const Notifications = await getNotifications();
+    if (!Notifications) return;
 
-  Notifications.setNotificationHandler({
+    Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
       shouldPlaySound: true,
@@ -47,32 +47,9 @@ export async function setup(): Promise<void> {
   if (status !== "granted") {
     return;
   }
-}
-
-export async function scheduleTodoReminder(
-  todoId: string,
-  text: string,
-  date: Date,
-): Promise<void> {
-  if (isReminderPast(date)) return;
-  if (!(await getNotificationsEnabled())) return;
-
-  const Notifications = await getNotifications();
-  if (!Notifications) return;
-
-  await Notifications.scheduleNotificationAsync({
-    identifier: getNotificationId(todoId),
-    content: {
-      title: i18n.t("notifications.reminderTitle"),
-      body: text,
-      data: { todoId },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date,
-      ...(Platform.OS === "android" && { channelId: CHANNEL_ID }),
-    },
-  });
+  } catch {
+    // expo-notifications not supported in Expo Go (SDK 53+)
+  }
 }
 
 export async function cancelTodoReminders(todoId: string): Promise<void> {
@@ -93,7 +70,11 @@ export async function cancelTodoReminders(todoId: string): Promise<void> {
 export async function scheduleRemindersForTodo(
   todo: TodoModel,
 ): Promise<void> {
-  if (todo.completed && todo.scheduleType === "one_time") return;
+  if (
+    todo.completed &&
+    (todo.scheduleType === "one_time" || todo.scheduleType === "recurring")
+  )
+    return;
   if (!(await getNotificationsEnabled())) return;
   await cancelTodoReminders(todo.id);
 
@@ -142,4 +123,35 @@ export async function rescheduleAllReminders(
     if (dates.length === 0) continue;
     await scheduleRemindersForTodo(todo);
   }
+}
+
+export function setupNotificationListeners(
+  onResponse: (todoId: string) => void,
+): () => void {
+  let sub: { remove: () => void } | null = null;
+  getNotifications()
+    .then((Notifications) => {
+      if (!Notifications) return;
+
+      Notifications.getLastNotificationResponseAsync().then((response) => {
+        const data = response?.notification?.request?.content?.data as
+          | { todoId?: string }
+          | undefined;
+        if (data?.todoId) onResponse(data.todoId);
+      });
+
+      sub = Notifications.addNotificationResponseReceivedListener(
+        (response) => {
+          const data = response.notification.request.content.data as {
+            todoId?: string;
+          };
+          if (data?.todoId) onResponse(data.todoId);
+        },
+      );
+    })
+    .catch(() => {});
+
+  return () => {
+    sub?.remove();
+  };
 }

@@ -6,12 +6,12 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { AnimatedPressable } from "../../components/ui/AnimatedPressable";
 import Animated, {
   Easing,
   FadeIn,
@@ -32,21 +32,15 @@ import {
   useTodoActions,
   useTodoList,
 } from "../../features/todo";
+import { toDateStr } from "../../utils/dateUtils";
 import {
-  getDateStringsWithTasks,
+  getDateTaskCounts,
   isTaskActiveOnDate,
 } from "../../utils/scheduleUtils";
 import { RectButton, Swipeable } from "react-native-gesture-handler";
 import type { AddTodoParams } from "../../store/todoStore";
 import type { TodoModel } from "../../types/todo";
 import type { TodoEditUpdates } from "../../features/todo/components/TodoEditModal";
-
-function toDateStr(date: Date): string {
-  const y = date.getFullYear();
-  const m = (date.getMonth() + 1).toString().padStart(2, "0");
-  const d = date.getDate().toString().padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -75,8 +69,8 @@ export default function HomeScreen() {
     d.setDate(d.getDate() + 60);
     return d;
   }, [selectedDate]);
-  const datesWithTasks = useMemo(
-    () => getDateStringsWithTasks(todos, fromDate, toDate),
+  const dateTaskCounts = useMemo(
+    () => getDateTaskCounts(todos, fromDate, toDate),
     [todos, fromDate, toDate],
   );
 
@@ -141,22 +135,29 @@ export default function HomeScreen() {
     item: TodoModel,
   ) => (
     <RectButton
-      style={styles.swipeDelete}
+      style={[styles.swipeDelete, { backgroundColor: colors.surface }]}
       onPress={() => deleteTodo(item.id)}
     >
-      <Ionicons name="trash-outline" size={22} color={colors.bg} />
-      <Text style={styles.swipeDeleteText}>{t("common.delete")}</Text>
+      <View style={[styles.swipeDeleteBar, { backgroundColor: colors.danger }]} />
+      <View style={styles.swipeDeleteContent}>
+        <Ionicons name="trash-outline" size={20} color={colors.danger} />
+        <Text style={[styles.swipeDeleteText, { color: colors.danger }]}>
+          {t("common.delete")}
+        </Text>
+      </View>
     </RectButton>
   );
 
   const renderTodo = ({ item, index }: { item: TodoModel; index: number }) => (
-    <Swipeable
-      renderRightActions={(progress, dragX) =>
-        renderRightActions(progress, dragX, item)
-      }
-      overshootRight={false}
-    >
-      <TodoCard
+    <View style={styles.swipeWrapper}>
+      <Swipeable
+        renderRightActions={(progress, dragX) =>
+          renderRightActions(progress, dragX, item)
+        }
+        overshootRight={false}
+        friction={2}
+      >
+        <TodoCard
         item={item}
         index={index}
         onToggle={toggleTodo}
@@ -165,7 +166,8 @@ export default function HomeScreen() {
         onDelete={deleteTodo}
         onEdit={setEditingTodo}
       />
-    </Swipeable>
+      </Swipeable>
+    </View>
   );
 
   const styles = useMemo(
@@ -186,7 +188,11 @@ export default function HomeScreen() {
           marginTop: 2,
           fontWeight: "400",
         },
-        list: { paddingHorizontal: 20, paddingBottom: 32, flexGrow: 1 },
+        list: {
+          paddingHorizontal: Math.max(20, insets.left, insets.right),
+          paddingBottom: 32,
+          flexGrow: 1,
+        },
         listEmpty: { flex: 1, justifyContent: "center" },
         emptyState: { alignItems: "center", paddingVertical: 64 },
         emptyIconWrap: {
@@ -219,7 +225,7 @@ export default function HomeScreen() {
           alignItems: "center",
           justifyContent: "space-between",
           gap: 12,
-          paddingHorizontal: 20,
+          paddingHorizontal: Math.max(20, insets.left, insets.right),
           paddingTop: 16,
           paddingBottom: 12,
         },
@@ -270,22 +276,40 @@ export default function HomeScreen() {
           paddingVertical: 18,
         },
         clearText: { fontSize: 15, fontWeight: "500", color: colors.danger },
+        swipeWrapper: {
+          marginBottom: 8,
+          borderRadius: 16,
+          overflow: "hidden",
+        },
         swipeDelete: {
-          backgroundColor: colors.danger,
+          flexDirection: "row",
+          alignItems: "stretch",
+          width: 72,
+          alignSelf: "stretch",
+          marginVertical: 8,
+          borderTopRightRadius: 14,
+          borderBottomRightRadius: 14,
+          overflow: "hidden",
+        },
+        swipeDeleteBar: {
+          width: 4,
+          borderRadius: 2,
+          alignSelf: "stretch",
+          marginRight: 12,
+          marginVertical: 10,
+        },
+        swipeDeleteContent: {
+          flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          width: 88,
-          marginBottom: 10,
-          borderRadius: 24,
+          gap: 4,
         },
         swipeDeleteText: {
-          color: colors.bg,
-          fontSize: 14,
-          fontWeight: "600",
-          marginTop: 4,
+          fontSize: 12,
+          fontWeight: "500",
         },
       }),
-    [colors],
+    [colors, insets.left, insets.right],
   );
 
   return (
@@ -295,7 +319,7 @@ export default function HomeScreen() {
       keyboardVerticalOffset={0}
     >
       <Animated.View
-        entering={FadeInDown.duration(350)}
+        entering={FadeInDown.duration(420).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}
         style={[styles.header, { paddingTop: insets.top }]}
       >
         <View style={styles.headerRow}>
@@ -332,7 +356,7 @@ export default function HomeScreen() {
                     returnKeyType="search"
                     autoFocus
                   />
-                  <Pressable
+                  <AnimatedPressable
                     onPress={() => {
                       setSearchQuery("");
                       searchExpandProgress.value = withTiming(
@@ -346,26 +370,20 @@ export default function HomeScreen() {
                     style={{ padding: 8 }}
                   >
                     <Ionicons name="close-circle" size={20} color={colors.textMuted} />
-                  </Pressable>
+                  </AnimatedPressable>
                 </View>
               ) : (
-                <Pressable
-                  onPress={expandSearch}
-                  style={({ pressed }) => [
-                    styles.searchBtn,
-                    pressed && styles.pressed,
-                  ]}
-                >
+                <AnimatedPressable onPress={expandSearch} style={styles.searchBtn}>
                   <Ionicons name="search" size={22} color={colors.textMuted} />
-                </Pressable>
+                </AnimatedPressable>
               )}
             </Animated.View>
-            <Pressable
+            <AnimatedPressable
               onPress={() => setModalVisible(true)}
-              style={({ pressed }) => [styles.addTaskBtn, pressed && styles.pressed]}
+              style={styles.addTaskBtn}
             >
               <Ionicons name="add" size={24} color={colors.bg} />
-            </Pressable>
+            </AnimatedPressable>
           </View>
         </View>
       </Animated.View>
@@ -386,7 +404,7 @@ export default function HomeScreen() {
       <DatePickerWidget
         selectedDate={selectedDate}
         onDateSelect={setSelectedDate}
-        datesWithTasks={datesWithTasks}
+        dateTaskCounts={dateTaskCounts}
       />
 
       <FlatList
@@ -421,16 +439,12 @@ export default function HomeScreen() {
 
       {todos.some((t) => t.completed) && (
         <Animated.View
-          entering={FadeIn.duration(300)}
-          exiting={FadeOut.duration(200)}
+          entering={FadeIn.duration(320).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}
+          exiting={FadeOut.duration(220)}
         >
-          <Pressable
+          <AnimatedPressable
             onPress={clearCompleted}
-            style={({ pressed }) => [
-              styles.clearBtn,
-              pressed && styles.pressed,
-              { paddingBottom: insets.bottom + 16 },
-            ]}
+            style={[styles.clearBtn, { paddingBottom: insets.bottom + 16 }]}
           >
             <Ionicons
             name="close-circle-outline"
@@ -438,7 +452,7 @@ export default function HomeScreen() {
             color={colors.danger}
             />
             <Text style={styles.clearText}>{t("home.clearCompleted")}</Text>
-          </Pressable>
+          </AnimatedPressable>
         </Animated.View>
       )}
     </KeyboardAvoidingView>

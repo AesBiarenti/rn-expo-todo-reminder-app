@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -13,6 +12,8 @@ import {
   Text,
   View,
 } from "react-native";
+import { AnimatedCancelButton } from "../../../../components/ui/AnimatedCancelButton";
+import { AnimatedSaveButton } from "../../../../components/ui/AnimatedSaveButton";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../../../context/ThemeContext";
 
@@ -196,26 +197,6 @@ export function CustomTimePicker({
       gap: 12,
       paddingBottom: 24,
     },
-    cancelBtn: {
-      flex: 1,
-      paddingVertical: 14,
-      borderRadius: 16,
-      backgroundColor: colors.surfaceHover,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    confirmBtn: {
-      flex: 1,
-      flexDirection: "row" as const,
-      gap: 8,
-      paddingVertical: 14,
-      borderRadius: 16,
-      backgroundColor: colors.accent,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    cancelBtnText: { fontSize: 16, fontWeight: "600", color: colors.text },
-    confirmBtnText: { fontSize: 16, fontWeight: "600", color: colors.bg },
     columnLabel: {
       fontSize: 12,
       fontWeight: "600",
@@ -315,13 +296,8 @@ export function CustomTimePicker({
           </View>
 
           <View style={styles.actions}>
-            <Pressable style={styles.cancelBtn} onPress={onClose}>
-              <Text style={styles.cancelBtnText}>{t("common.cancel")}</Text>
-            </Pressable>
-            <Pressable style={styles.confirmBtn} onPress={handleConfirm}>
-              <Ionicons name="checkmark" size={20} color={colors.bg} />
-              <Text style={styles.confirmBtnText}>{t("common.save")}</Text>
-            </Pressable>
+            <AnimatedCancelButton onPress={onClose} flex />
+            <AnimatedSaveButton onPress={handleConfirm} flex />
           </View>
         </View>
       </View>

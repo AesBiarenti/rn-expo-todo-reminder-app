@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
-import { Keyboard, Pressable, StyleSheet, TextInput } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import { Keyboard, StyleSheet, TextInput } from "react-native";
+import Animated, { Easing, FadeInDown } from "react-native-reanimated";
+import { AnimatedPressable } from "../../../components/ui/AnimatedPressable";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../../context/ThemeContext";
 import { CustomDatePicker, CustomTimePicker } from "./DateTimePicker";
@@ -99,7 +100,7 @@ export function TodoInput({ value, onChangeText, onAdd }: TodoInputProps) {
 
   return (
     <Animated.View
-      entering={FadeInDown.delay(80).duration(350)}
+      entering={FadeInDown.delay(80).duration(400).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}
       style={styles.inputWrap}
     >
       <TextInput
@@ -117,29 +118,19 @@ export function TodoInput({ value, onChangeText, onAdd }: TodoInputProps) {
         }}
         returnKeyType="done"
       />
-      <Pressable
+      <AnimatedPressable
         onPress={() => setReminderMode(!reminderMode)}
-        style={({ pressed }) => [
-          styles.bellBtn,
-          reminderMode && styles.bellBtnActive,
-          pressed && styles.pressed,
-        ]}
+        style={[styles.bellBtn, reminderMode && styles.bellBtnActive]}
       >
         <Ionicons
           name={reminderMode ? "alarm" : "alarm-outline"}
           size={22}
           color={reminderMode ? colors.accent : colors.textMuted}
         />
-      </Pressable>
-      <Pressable
-        onPress={handleAddPress}
-        style={({ pressed }) => [
-          styles.addBtn,
-          pressed && styles.addBtnPressed,
-        ]}
-      >
+      </AnimatedPressable>
+      <AnimatedPressable onPress={handleAddPress} style={styles.addBtn}>
         <Ionicons name="add" size={24} color={colors.bg} />
-      </Pressable>
+      </AnimatedPressable>
       {showDatePicker && (
         <CustomDatePicker
           visible={showDatePicker}

@@ -1,6 +1,5 @@
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { loadStoredLocale } from "../i18n";
-import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -9,6 +8,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   rescheduleAllReminders,
   setup as setupNotifications,
+  setupNotificationListeners,
 } from "../services/notificationService";
 import { useTodoStore } from "../store/todoStore";
 
@@ -18,7 +18,7 @@ function RootLayoutContent() {
   const router = useRouter();
 
   useEffect(() => {
-    setupNotifications();
+    setupNotifications().catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -29,30 +29,14 @@ function RootLayoutContent() {
   }, []);
 
   useEffect(() => {
-    const handleNotificationResponse = (
-      response: Notifications.NotificationResponse,
-    ) => {
-      if (response.notification.request.content.data?.todoId) {
-        router.replace("/(tabs)");
-      }
-    };
-
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response?.notification) {
-        handleNotificationResponse(response);
-      }
-    });
-
-    const sub = Notifications.addNotificationResponseReceivedListener(
-      handleNotificationResponse,
-    );
-    return () => sub.remove();
+    const cleanup = setupNotificationListeners(() => router.replace("/(tabs)"));
+    return () => cleanup?.();
   }, [router]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       const todos = useTodoStore.getState().todos;
-      rescheduleAllReminders(todos);
+      rescheduleAllReminders(todos).catch(() => {});
     }, 800);
     return () => clearTimeout(timer);
   }, []);

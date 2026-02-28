@@ -26,7 +26,7 @@ export default function TabLayout() {
           title: t("tabs.tasks"),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? "checkbox" : "checkbox-outline"}
+              name={focused ? "clipboard" : "clipboard-outline"}
               size={22}
               color={focused ? colors.accent : color}
             />

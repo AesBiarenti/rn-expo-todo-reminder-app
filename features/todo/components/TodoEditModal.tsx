@@ -1,15 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Dimensions, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import type {
   CategoryId,
   ChecklistItem,
@@ -18,13 +10,25 @@ import type {
   TaskScheduleType,
   TodoModel,
 } from "../../../types/todo";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../../context/ThemeContext";
 import {
   combineDateAndTime,
   formatDateShort,
   formatReminderDate,
   formatTime,
+  getDefaultDate,
+  getDefaultTime,
+  toDateStr,
+  toTimeStr,
 } from "../../../utils/dateUtils";
+import { AnimatedCancelButton } from "../../../components/ui/AnimatedCancelButton";
+import { AnimatedSaveButton } from "../../../components/ui/AnimatedSaveButton";
+import { BottomSheetModal } from "../../../components/ui/BottomSheetModal";
+import { ChipRow } from "../../../components/ui/ChipRow";
+import { PickerRow } from "../../../components/ui/PickerRow";
+import { RemovableChipList } from "../../../components/ui/RemovableChipList";
+import { createTodoModalStyles } from "../styles/todoModalStyles";
 import { CustomDatePicker, CustomTimePicker } from "./DateTimePicker";
 import { PriorityCategorySection, ScheduleTypeSelector } from "./schedule";
 import {
@@ -33,24 +37,6 @@ import {
   WEEKDAYS,
 } from "../constants";
 import { PRIORITY_COLORS } from "../../../constants/theme";
-
-const getDefaultDate = () => new Date(Date.now() + 3600000);
-const getDefaultTime = () => {
-  const d = new Date();
-  d.setMinutes(d.getMinutes() + 30);
-  return d;
-};
-
-function toDateStr(date: Date): string {
-  const y = date.getFullYear();
-  const m = (date.getMonth() + 1).toString().padStart(2, "0");
-  const d = date.getDate().toString().padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function toTimeStr(date: Date): string {
-  return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
-}
 
 export interface TodoEditUpdates {
   text: string;
@@ -90,6 +76,8 @@ export function TodoEditModal({
 }: TodoEditModalProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const horizontalPadding = Math.max(24, insets.left, insets.right);
   const [text, setText] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
@@ -396,210 +384,24 @@ export function TodoEditModal({
     setDailyTimes(dailyTimes.filter((x) => x !== t));
   };
 
+  const styles = useMemo(() => createTodoModalStyles(colors), [colors]);
+
   if (!todo) return null;
 
-  const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        overlay: {
-          flex: 1,
-          backgroundColor: "rgba(0,0,0,0.5)",
-          justifyContent: "center",
-          padding: 24,
-        },
-        modal: {
-          backgroundColor: colors.surface,
-          borderRadius: 20,
-          padding: 24,
-          maxHeight: "90%",
-        },
-        title: { fontSize: 20, fontWeight: "700", color: colors.text, marginBottom: 20 },
-        input: {
-          backgroundColor: colors.surfaceHover,
-          borderRadius: 16,
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          fontSize: 16,
-          color: colors.text,
-          marginBottom: 20,
-        },
-        section: { marginBottom: 20 },
-        label: { fontSize: 13, fontWeight: "600", color: colors.textMuted, marginBottom: 8 },
-        priorityRow: { flexDirection: "row", gap: 8 },
-        priorityBtn: {
-          flex: 1,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 6,
-          paddingVertical: 10,
-          borderRadius: 14,
-          backgroundColor: colors.surfaceHover,
-        },
-        priorityDot: { width: 8, height: 8, borderRadius: 4 },
-        priorityLabel: { fontSize: 13, fontWeight: "500", color: colors.text },
-        categoryRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-        categoryChip: {
-          paddingHorizontal: 14,
-          paddingVertical: 8,
-          borderRadius: 24,
-          backgroundColor: colors.surfaceHover,
-        },
-        categoryChipActive: {
-          backgroundColor: colors.accentDim,
-          borderWidth: 1,
-          borderColor: colors.accent,
-        },
-        categoryChipText: { fontSize: 14, color: colors.textMuted },
-        categoryChipTextActive: { color: colors.accent, fontWeight: "600" },
-        typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-        typeChip: {
-          paddingHorizontal: 14,
-          paddingVertical: 8,
-          borderRadius: 24,
-          backgroundColor: colors.surfaceHover,
-        },
-        typeChipActive: {
-          backgroundColor: colors.accentDim,
-          borderWidth: 1,
-          borderColor: colors.accent,
-        },
-        typeChipText: { fontSize: 14, color: colors.textMuted },
-        typeChipTextActive: { color: colors.accent, fontWeight: "600" },
-        pickerRow: {
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-          padding: 14,
-          backgroundColor: colors.surfaceHover,
-          borderRadius: 16,
-          marginBottom: 10,
-        },
-        pickerLabel: { fontSize: 15, fontWeight: "500", color: colors.text, width: 50 },
-        pickerValue: { flex: 1, fontSize: 15, color: colors.textMuted },
-        dailyTimesRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
-        timeChip: {
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 6,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          borderRadius: 24,
-          backgroundColor: colors.surfaceHover,
-        },
-        timeChipText: { fontSize: 14, color: colors.text, fontWeight: "500" },
-        addTimeBtn: {
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 6,
-          paddingHorizontal: 14,
-          paddingVertical: 8,
-          borderRadius: 24,
-          borderWidth: 1,
-          borderColor: colors.accent,
-          borderStyle: "dashed",
-        },
-        addTimeText: { fontSize: 14, color: colors.accent, fontWeight: "500" },
-        reminderPreview: { fontSize: 13, color: colors.accent, marginTop: 4 },
-        reminderHint: { fontSize: 12, color: colors.textMuted, marginBottom: 6 },
-        checklistInputRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
-        checklistInput: {
-          flex: 1,
-          backgroundColor: colors.surfaceHover,
-          borderRadius: 16,
-          paddingHorizontal: 16,
-          paddingVertical: 14,
-          fontSize: 16,
-          color: colors.text,
-        },
-        addChecklistBtn: {
-          width: 48,
-          height: 48,
-          borderRadius: 16,
-          backgroundColor: colors.accent,
-          alignItems: "center",
-          justifyContent: "center",
-        },
-        checklistItemRow: {
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          paddingVertical: 10,
-          paddingHorizontal: 12,
-          backgroundColor: colors.surfaceHover,
-          borderRadius: 14,
-          marginBottom: 8,
-        },
-        checklistItemText: { fontSize: 15, color: colors.text, flex: 1 },
-        removeItemBtn: { padding: 4 },
-        recurrenceTypeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
-        recurrenceChip: {
-          paddingHorizontal: 14,
-          paddingVertical: 8,
-          borderRadius: 24,
-          backgroundColor: colors.surfaceHover,
-        },
-        recurrenceChipText: { fontSize: 14, color: colors.textMuted },
-        weekdaysRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
-        weekdayChip: {
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          borderRadius: 24,
-          backgroundColor: colors.surfaceHover,
-        },
-        weekdayChipActive: {
-          backgroundColor: colors.accentDim,
-          borderWidth: 1,
-          borderColor: colors.accent,
-        },
-        weekdayChipText: { fontSize: 14, color: colors.textMuted },
-        weekdayChipTextActive: { color: colors.accent, fontWeight: "600" },
-        dayOfMonthRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
-        dayOfMonthChip: {
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          borderRadius: 24,
-          backgroundColor: colors.surfaceHover,
-        },
-        monthsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
-        monthChip: {
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          borderRadius: 24,
-          backgroundColor: colors.surfaceHover,
-        },
-        monthChipText: { fontSize: 13, color: colors.textMuted },
-        actions: { flexDirection: "row", gap: 12, justifyContent: "flex-end", marginTop: 8 },
-        cancelBtn: { paddingVertical: 12, paddingHorizontal: 20, borderRadius: 16 },
-        cancelBtnText: { fontSize: 16, color: colors.textMuted },
-        saveBtn: {
-          paddingVertical: 12,
-          paddingHorizontal: 24,
-          borderRadius: 16,
-          backgroundColor: colors.accent,
-        },
-        saveBtnDisabled: { opacity: 0.5 },
-        saveBtnText: { fontSize: 16, fontWeight: "600", color: colors.bg },
-      }),
-    [colors],
-  );
-
   return (
-    <Modal
+    <BottomSheetModal
       visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
+      onClose={handleClose}
+      keyboardAvoiding
+      maxHeight={Math.min(Dimensions.get("window").height * 0.88, 700)}
+      paddingHorizontal={horizontalPadding}
     >
-      <Pressable style={styles.overlay} onPress={handleClose}>
-        <Pressable
-          style={styles.modal}
-          onPress={(e) => e.stopPropagation()}
-        >
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
+      <ScrollView
+              style={styles.scrollContent}
+              contentContainerStyle={styles.scrollContentContainer}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
             <Text style={styles.title}>{t("editModal.title")}</Text>
 
             <TextInput
@@ -636,38 +438,26 @@ export function TodoEditModal({
 
               {scheduleType === "one_time" && (
                 <>
-                  <Pressable
-                    onPress={() => openDatePicker("date")}
-                    style={styles.pickerRow}
-                  >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color={colors.accent}
-                    />
-                    <Text style={styles.pickerLabel}>{t("addModal.date")}</Text>
-                    <Text style={styles.pickerValue}>
-                      {selectedDate
+                  <PickerRow
+                    icon="calendar-outline"
+                    label="addModal.date"
+                    value={
+                      selectedDate
                         ? formatDateShort(selectedDate)
-                        : t("addModal.selectDate")}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => openTimePicker("time")}
-                    style={styles.pickerRow}
-                  >
-                    <Ionicons
-                      name="time-outline"
-                      size={20}
-                      color={colors.accent}
-                    />
-                    <Text style={styles.pickerLabel}>{t("addModal.time")}</Text>
-                    <Text style={styles.pickerValue}>
-                      {selectedTime
+                        : t("addModal.selectDate")
+                    }
+                    onPress={() => openDatePicker("date")}
+                  />
+                  <PickerRow
+                    icon="time-outline"
+                    label="addModal.time"
+                    value={
+                      selectedTime
                         ? formatTime(selectedTime)
-                        : t("addModal.selectTime")}
-                    </Text>
-                  </Pressable>
+                        : t("addModal.selectTime")
+                    }
+                    onPress={() => openTimePicker("time")}
+                  />
                   {hasReminder && (
                     <Text style={styles.reminderPreview}>
                       {formatReminderDate(reminderAt!)}
@@ -679,67 +469,37 @@ export function TodoEditModal({
               {(scheduleType === "multi_times_daily" ||
                 scheduleType === "ongoing") && (
                 <>
-                  <Pressable
-                    onPress={() => openDatePicker("start")}
-                    style={styles.pickerRow}
-                  >
-                    <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color={colors.accent}
-                    />
-                    <Text style={styles.pickerLabel}>{t("addModal.start")}</Text>
-                    <Text style={styles.pickerValue}>
-                      {startDate
+                  <PickerRow
+                    icon="calendar-outline"
+                    label="addModal.start"
+                    value={
+                      startDate
                         ? formatDateShort(startDate)
-                        : t("addModal.selectDate")}
-                    </Text>
-                  </Pressable>
+                        : t("addModal.selectDate")
+                    }
+                    onPress={() => openDatePicker("start")}
+                  />
 
                   {scheduleType === "multi_times_daily" && (
-                    <Pressable
-                      onPress={() => openDatePicker("end")}
-                      style={styles.pickerRow}
-                    >
-                      <Ionicons
-                        name="calendar-outline"
-                        size={20}
-                        color={colors.accent}
-                      />
-                      <Text style={styles.pickerLabel}>{t("addModal.end")}</Text>
-                      <Text style={styles.pickerValue}>
-                        {endDate
+                    <PickerRow
+                      icon="calendar-outline"
+                      label="addModal.end"
+                      value={
+                        endDate
                           ? formatDateShort(endDate)
-                          : t("addModal.selectDateOptional")}
-                      </Text>
-                    </Pressable>
+                          : t("addModal.selectDateOptional")
+                      }
+                      onPress={() => openDatePicker("end")}
+                    />
                   )}
 
                   {(scheduleType === "multi_times_daily" ||
                     scheduleType === "ongoing") && (
-                    <View style={styles.dailyTimesRow}>
-                      {dailyTimes.map((t) => (
-                        <Pressable
-                          key={t}
-                          style={styles.timeChip}
-                          onPress={() => removeDailyTime(t)}
-                        >
-                          <Text style={styles.timeChipText}>{t}</Text>
-                          <Ionicons
-                            name="close"
-                            size={14}
-                            color={colors.textMuted}
-                          />
-                        </Pressable>
-                      ))}
-                      <Pressable
-                        style={styles.addTimeBtn}
-                        onPress={() => openTimePicker("daily")}
-                      >
-                        <Ionicons name="add" size={18} color={colors.accent} />
-                        <Text style={styles.addTimeText}>{t("addModal.addTime")}</Text>
-                      </Pressable>
-                    </View>
+                    <RemovableChipList
+                      values={dailyTimes}
+                      onRemove={removeDailyTime}
+                      onAdd={() => openTimePicker("daily")}
+                    />
                   )}
                 </>
               )}
@@ -781,237 +541,129 @@ export function TodoEditModal({
               {scheduleType === "recurring" && (
                 <>
                   <Text style={styles.reminderHint}>{t("editModal.recurrence")}</Text>
-                  <View style={styles.recurrenceTypeRow}>
-                    {RECURRENCE_TYPES.map((r) => (
-                      <Pressable
-                        key={r.value}
-                        onPress={() => setRecurrenceType(r.value)}
-                        style={[
-                          styles.recurrenceChip,
-                          recurrenceType === r.value && styles.categoryChipActive,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.recurrenceChipText,
-                            recurrenceType === r.value && styles.categoryChipTextActive,
-                          ]}
-                        >
-                          {t(r.labelKey)}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
+                  <ChipRow
+                    items={RECURRENCE_TYPES}
+                    selected={recurrenceType}
+                    onSelect={setRecurrenceType}
+                  />
                   {recurrenceType === "weekly" && (
                     <>
                       <Text style={styles.reminderHint}>{t("addModal.dayOfWeek")}</Text>
-                      <View style={styles.weekdaysRow}>
-                        {WEEKDAYS.map((w) => (
-                          <Pressable
-                            key={w.value}
-                            onPress={() => setRecurrenceDayOfWeek(w.value)}
-                            style={[
-                              styles.weekdayChip,
-                              recurrenceDayOfWeek === w.value && styles.weekdayChipActive,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.weekdayChipText,
-                                recurrenceDayOfWeek === w.value && styles.weekdayChipTextActive,
-                              ]}
-                            >
-                              {t(w.labelKey)}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
+                      <ChipRow
+                        items={WEEKDAYS}
+                        selected={recurrenceDayOfWeek}
+                        onSelect={setRecurrenceDayOfWeek}
+                      />
                     </>
                   )}
                   {recurrenceType === "monthly" && (
                     <>
                       <Text style={styles.reminderHint}>{t("addModal.dayOfMonth")}</Text>
-                      <View style={styles.dayOfMonthRow}>
-                        {[1, 5, 10, 15, 20, 25, 31].map((d) => (
-                          <Pressable
-                            key={d}
-                            onPress={() => setRecurrenceDayOfMonth(d)}
-                            style={[
-                              styles.dayOfMonthChip,
-                              recurrenceDayOfMonth === d && styles.weekdayChipActive,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.weekdayChipText,
-                                recurrenceDayOfMonth === d && styles.weekdayChipTextActive,
-                              ]}
-                            >
-                              {d}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
+                      <ChipRow
+                        items={[1, 5, 10, 15, 20, 25, 31].map((d) => ({
+                          value: d,
+                          labelKey: String(d),
+                          label: String(d),
+                        }))}
+                        selected={recurrenceDayOfMonth}
+                        onSelect={setRecurrenceDayOfMonth}
+                      />
                     </>
                   )}
                   {recurrenceType === "yearly" && (
                     <>
-                          <Text style={styles.reminderHint}>{t("addModal.month")}</Text>
-                      <View style={styles.monthsRow}>
-                            {MONTH_KEYS.map((key, i) => (
-                          <Pressable
-                            key={i}
-                            onPress={() => setRecurrenceMonth(i + 1)}
-                            style={[
-                              styles.monthChip,
-                              recurrenceMonth === i + 1 && styles.weekdayChipActive,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.monthChipText,
-                                recurrenceMonth === i + 1 && styles.weekdayChipTextActive,
-                              ]}
-                            >
-                              {t(key)}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
+                      <Text style={styles.reminderHint}>{t("addModal.month")}</Text>
+                      <ChipRow
+                        items={MONTH_KEYS.map((key, i) => ({
+                          value: i + 1,
+                          labelKey: key,
+                        }))}
+                        selected={recurrenceMonth}
+                        onSelect={setRecurrenceMonth}
+                      />
                       <Text style={styles.reminderHint}>{t("addModal.dayOfMonth")}</Text>
-                      <View style={styles.dayOfMonthRow}>
-                        {[1, 5, 10, 15, 20, 25, 31].map((d) => (
-                          <Pressable
-                            key={d}
-                            onPress={() => setRecurrenceDayOfMonth(d)}
-                            style={[
-                              styles.dayOfMonthChip,
-                              recurrenceDayOfMonth === d && styles.weekdayChipActive,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.weekdayChipText,
-                                recurrenceDayOfMonth === d && styles.weekdayChipTextActive,
-                              ]}
-                            >
-                              {d}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
+                      <ChipRow
+                        items={[1, 5, 10, 15, 20, 25, 31].map((d) => ({
+                          value: d,
+                          labelKey: String(d),
+                          label: String(d),
+                        }))}
+                        selected={recurrenceDayOfMonth}
+                        onSelect={setRecurrenceDayOfMonth}
+                      />
                     </>
                   )}
                   <Text style={styles.reminderHint}>{t("addModal.time")}</Text>
-                  <Pressable
+                  <PickerRow
+                    icon="time-outline"
+                    label="addModal.time"
+                    value={recurrenceTime ?? "09:00"}
                     onPress={() => openTimePicker("recurTime")}
-                    style={styles.pickerRow}
-                  >
-                    <Ionicons name="time-outline" size={20} color={colors.accent} />
-                    <Text style={styles.pickerLabel}>{t("addModal.time")}</Text>
-                    <Text style={styles.pickerValue}>{recurrenceTime}</Text>
-                  </Pressable>
+                  />
                   <Text style={styles.reminderHint}>{t("addModal.startDate")}</Text>
-                  <Pressable
-                    onPress={() => openDatePicker("recurStart")}
-                    style={styles.pickerRow}
-                  >
-                    <Ionicons name="calendar-outline" size={20} color={colors.accent} />
-                    <Text style={styles.pickerLabel}>{t("addModal.start")}</Text>
-                    <Text style={styles.pickerValue}>
-                      {recurrenceStartDate
+                  <PickerRow
+                    icon="calendar-outline"
+                    label="addModal.start"
+                    value={
+                      recurrenceStartDate
                         ? formatDateShort(recurrenceStartDate)
-                        : t("addModal.selectDate")}
-                    </Text>
-                  </Pressable>
+                        : t("addModal.selectDate")
+                    }
+                    onPress={() => openDatePicker("recurStart")}
+                  />
                   <Text style={styles.reminderHint}>{t("addModal.endDate")}</Text>
-                  <Pressable
-                    onPress={() => openDatePicker("recurEnd")}
-                    style={styles.pickerRow}
-                  >
-                    <Ionicons name="calendar-outline" size={20} color={colors.accent} />
-                    <Text style={styles.pickerLabel}>{t("addModal.end")}</Text>
-                    <Text style={styles.pickerValue}>
-                      {recurrenceEndDate
+                  <PickerRow
+                    icon="calendar-outline"
+                    label="addModal.end"
+                    value={
+                      recurrenceEndDate
                         ? formatDateShort(recurrenceEndDate)
-                        : t("addModal.selectDateOptional")}
-                    </Text>
-                  </Pressable>
+                        : t("addModal.selectDateOptional")
+                    }
+                    onPress={() => openDatePicker("recurEnd")}
+                  />
                 </>
               )}
 
               {scheduleType === "weekly_days" && (
                 <>
                   <Text style={styles.reminderHint}>{t("addModal.weekdays")}</Text>
-                  <View style={styles.weekdaysRow}>
-                    {WEEKDAYS.map((w) => (
-                      <Pressable
-                        key={w.value}
-                        onPress={() => toggleWeekday(w.value)}
-                        style={[
-                          styles.weekdayChip,
-                          weekdays.includes(w.value) && styles.weekdayChipActive,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.weekdayChipText,
-                            weekdays.includes(w.value) && styles.weekdayChipTextActive,
-                          ]}
-                        >
-                                {t(w.labelKey)}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
+                  <ChipRow
+                    items={WEEKDAYS}
+                    selected={weekdays}
+                    onSelect={toggleWeekday}
+                    multiSelect
+                  />
                   <Text style={styles.reminderHint}>{t("addModal.timesOptional")}</Text>
-                  <View style={styles.dailyTimesRow}>
-                    {weeklyTimes.map((t) => (
-                      <Pressable
-                        key={t}
-                        style={styles.timeChip}
-                        onPress={() =>
-                          setWeeklyTimes(weeklyTimes.filter((x) => x !== t))
-                        }
-                      >
-                        <Text style={styles.timeChipText}>{t}</Text>
-                        <Ionicons name="close" size={14} color={colors.textMuted} />
-                      </Pressable>
-                    ))}
-                    <Pressable
-                      style={styles.addTimeBtn}
-                      onPress={() => openTimePicker("weeklyTime")}
-                    >
-                      <Ionicons name="add" size={18} color={colors.accent} />
-                        <Text style={styles.addTimeText}>{t("addModal.addTime")}</Text>
-                    </Pressable>
-                  </View>
+                  <RemovableChipList
+                    values={weeklyTimes}
+                    onRemove={(t) =>
+                      setWeeklyTimes(weeklyTimes.filter((x) => x !== t))
+                    }
+                    onAdd={() => openTimePicker("weeklyTime")}
+                  />
                   <Text style={styles.reminderHint}>{t("addModal.startDate")}</Text>
-                  <Pressable
-                    onPress={() => openDatePicker("weeklyStart")}
-                    style={styles.pickerRow}
-                  >
-                    <Ionicons name="calendar-outline" size={20} color={colors.accent} />
-                    <Text style={styles.pickerLabel}>{t("addModal.start")}</Text>
-                    <Text style={styles.pickerValue}>
-                      {weeklyStartDate
+                  <PickerRow
+                    icon="calendar-outline"
+                    label="addModal.start"
+                    value={
+                      weeklyStartDate
                         ? formatDateShort(weeklyStartDate)
-                        : t("addModal.selectDate")}
-                    </Text>
-                  </Pressable>
+                        : t("addModal.selectDate")
+                    }
+                    onPress={() => openDatePicker("weeklyStart")}
+                  />
                   <Text style={styles.reminderHint}>{t("addModal.endDate")}</Text>
-                  <Pressable
-                    onPress={() => openDatePicker("weeklyEnd")}
-                    style={styles.pickerRow}
-                  >
-                    <Ionicons name="calendar-outline" size={20} color={colors.accent} />
-                    <Text style={styles.pickerLabel}>{t("addModal.end")}</Text>
-                    <Text style={styles.pickerValue}>
-                      {weeklyEndDate
+                  <PickerRow
+                    icon="calendar-outline"
+                    label="addModal.end"
+                    value={
+                      weeklyEndDate
                         ? formatDateShort(weeklyEndDate)
-                        : t("addModal.selectDateOptional")}
-                    </Text>
-                  </Pressable>
+                        : t("addModal.selectDateOptional")
+                    }
+                    onPress={() => openDatePicker("weeklyEnd")}
+                  />
                 </>
               )}
             </View>
@@ -1068,22 +720,15 @@ export function TodoEditModal({
                 onClose={() => setShowTimePicker(false)}
               />
             )}
-
-            <View style={styles.actions}>
-              <Pressable onPress={handleClose} style={styles.cancelBtn}>
-                <Text style={styles.cancelBtnText}>{t("editModal.cancel")}</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleSave}
-                style={[styles.saveBtn, !canSave && styles.saveBtnDisabled]}
-                disabled={!canSave}
-              >
-                <Text style={styles.saveBtnText}>{t("editModal.save")}</Text>
-              </Pressable>
-            </View>
-          </ScrollView>
-        </Pressable>
-      </Pressable>
-    </Modal>
+      </ScrollView>
+      <View style={[styles.actions, { paddingBottom: insets.bottom + 16 }]}>
+        <AnimatedCancelButton onPress={handleClose} label="editModal.cancel" />
+        <AnimatedSaveButton
+          onPress={handleSave}
+          disabled={!canSave}
+          label="editModal.save"
+        />
+      </View>
+    </BottomSheetModal>
   );
 }

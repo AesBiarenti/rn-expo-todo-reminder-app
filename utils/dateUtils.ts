@@ -61,3 +61,36 @@ export function formatTime(date: Date): string {
   const minutes = date.getMinutes().toString().padStart(2, "0");
   return `${hours}:${minutes}`;
 }
+
+/** Converts Date to YYYY-MM-DD string */
+export function toDateStr(date: Date): string {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, "0");
+  const d = date.getDate().toString().padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Converts Date to HH:mm string */
+export function toTimeStr(date: Date): string {
+  return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+}
+
+/** Default date for pickers: 1 hour from now */
+export function getDefaultDate(): Date {
+  return new Date(Date.now() + 3600000);
+}
+
+/** Default time for pickers: 30 minutes from now */
+export function getDefaultTime(): Date {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() + 30);
+  return d;
+}
+
+/** Parses dateStr (YYYY-MM-DD) + timeStr (HH:mm) into local Date */
+export function parseTimeToDate(dateStr: string, timeStr: string): Date {
+  const [h, m] = timeStr.split(":").map(Number);
+  const d = parseDateLocal(dateStr);
+  d.setHours(h ?? 9, m ?? 0, 0, 0);
+  return d;
+}

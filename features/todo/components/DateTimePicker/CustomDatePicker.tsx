@@ -10,6 +10,9 @@ import {
   Text,
   View,
 } from "react-native";
+import { AnimatedCancelButton } from "../../../../components/ui/AnimatedCancelButton";
+import { AnimatedPressable } from "../../../../components/ui/AnimatedPressable";
+import { AnimatedSaveButton } from "../../../../components/ui/AnimatedSaveButton";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../../../../context/ThemeContext";
 import { MONTH_KEYS, WEEKDAYS } from "../../constants";
@@ -197,6 +200,7 @@ export function CustomDatePicker({
         },
         weekdayCell: {
           width: CELL_SIZE,
+          marginHorizontal: 2,
           alignItems: "center",
           justifyContent: "center",
         },
@@ -248,26 +252,6 @@ export function CustomDatePicker({
           gap: 12,
           paddingBottom: 24,
         },
-        cancelBtn: {
-          flex: 1,
-          paddingVertical: 14,
-          borderRadius: 16,
-          backgroundColor: colors.surfaceHover,
-          alignItems: "center",
-          justifyContent: "center",
-        },
-        confirmBtn: {
-          flex: 1,
-          flexDirection: "row" as const,
-          gap: 8,
-          paddingVertical: 14,
-          borderRadius: 16,
-          backgroundColor: colors.accent,
-          alignItems: "center",
-          justifyContent: "center",
-        },
-        cancelBtnText: { fontSize: 16, fontWeight: "600", color: colors.text },
-        confirmBtnText: { fontSize: 16, fontWeight: "600", color: colors.bg },
       }),
     [colors]
   );
@@ -289,7 +273,7 @@ export function CustomDatePicker({
           <View style={styles.handle} />
 
           <View style={styles.headerRow}>
-            <Pressable
+            <AnimatedPressable
               style={styles.navBtn}
               onPress={prevMonth}
               disabled={!canGoPrev}
@@ -300,9 +284,9 @@ export function CustomDatePicker({
                 size={22}
                 color={canGoPrev ? colors.text : colors.textMuted}
               />
-            </Pressable>
+            </AnimatedPressable>
             <Text style={styles.monthYear}>{monthYearLabel}</Text>
-            <Pressable
+            <AnimatedPressable
               style={styles.navBtn}
               onPress={nextMonth}
               hitSlop={8}
@@ -312,7 +296,7 @@ export function CustomDatePicker({
                 size={22}
                 color={colors.text}
               />
-            </Pressable>
+            </AnimatedPressable>
           </View>
 
           <View style={styles.weekdayRow}>
@@ -335,7 +319,7 @@ export function CustomDatePicker({
                 cell.date && isSameDay(cell.date, selectedDate);
 
               return (
-                <Pressable
+                <AnimatedPressable
                   key={idx}
                   style={[
                     styles.dayCell,
@@ -358,22 +342,14 @@ export function CustomDatePicker({
                       {cell.day}
                     </Text>
                   )}
-                </Pressable>
+                </AnimatedPressable>
               );
             })}
           </View>
 
           <View style={styles.actions}>
-            <Pressable style={styles.cancelBtn} onPress={onClose}>
-              <Text style={styles.cancelBtnText}>{t("common.cancel")}</Text>
-            </Pressable>
-            <Pressable
-              style={styles.confirmBtn}
-              onPress={handleConfirm}
-            >
-              <Ionicons name="checkmark" size={20} color={colors.bg} />
-              <Text style={styles.confirmBtnText}>{t("common.save")}</Text>
-            </Pressable>
+            <AnimatedCancelButton onPress={onClose} flex />
+            <AnimatedSaveButton onPress={handleConfirm} flex />
           </View>
         </View>
       </View>

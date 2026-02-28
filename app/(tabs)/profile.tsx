@@ -11,6 +11,10 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, { Easing, FadeIn } from "react-native-reanimated";
+import { AnimatedCancelButton } from "../../components/ui/AnimatedCancelButton";
+import { AnimatedPressable } from "../../components/ui/AnimatedPressable";
+import { MenuItem } from "../../components/ui/MenuItem";
 import { useTranslation } from "react-i18next";
 import i18n from "../../i18n";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -94,11 +98,14 @@ export default function ProfileScreen() {
           fontSize: 28,
           fontWeight: "700",
           color: colors.text,
-          paddingHorizontal: 24,
+          paddingHorizontal: Math.max(24, insets.left),
           paddingTop: 16,
           paddingBottom: 24,
         },
-        section: { paddingHorizontal: 24, marginBottom: 24 },
+        section: {
+          paddingHorizontal: Math.max(24, insets.left, insets.right),
+          marginBottom: 24,
+        },
         sectionTitle: {
           fontSize: 13,
           fontWeight: "600",
@@ -119,14 +126,27 @@ export default function ProfileScreen() {
         menuItemDisabled: { opacity: 0.6 },
         menuItemContent: {
           flex: 1,
+          minWidth: 0,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
           marginLeft: 14,
+          paddingRight: 8,
         },
-        menuLabel: { fontSize: 16, color: colors.text },
+        menuLabel: {
+          fontSize: 16,
+          color: colors.text,
+          flex: 1,
+          minWidth: 0,
+        },
         menuLabelDisabled: { color: colors.textMuted },
-        menuSubtext: { fontSize: 14, color: colors.textMuted },
+        menuSubtext: {
+          fontSize: 14,
+          color: colors.textMuted,
+          flexShrink: 0,
+          minWidth: 56,
+          marginLeft: 8,
+        },
         badge: { backgroundColor: colors.accent, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
         badgeText: { fontSize: 12, fontWeight: "600", color: colors.bg },
         modalOverlay: {
@@ -170,10 +190,21 @@ export default function ProfileScreen() {
         },
         langOptionText: { fontSize: 16, color: colors.text },
         langOptionTextActive: { color: colors.accent, fontWeight: "600" },
-        modalCloseBtn: { marginTop: 12, paddingVertical: 12, alignItems: "center" },
-        modalCloseText: { fontSize: 16, color: colors.textMuted },
+        modalCloseBtn: {
+          marginTop: 12,
+          paddingVertical: 12,
+          paddingHorizontal: 20,
+          alignItems: "center",
+          alignSelf: "stretch",
+          flexShrink: 0,
+        },
+        modalCloseText: {
+          fontSize: 16,
+          color: colors.textMuted,
+          flexShrink: 0,
+        },
       }),
-    [colors],
+    [colors, insets.left, insets.right],
   );
 
   return (
@@ -182,68 +213,62 @@ export default function ProfileScreen() {
       contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.pageTitle}>{t("profile.settings")}</Text>
+      <Animated.Text
+        entering={FadeIn.duration(400).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}
+        style={styles.pageTitle}
+      >
+        {t("profile.settings")}
+      </Animated.Text>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t("profile.settings")}</Text>
-        {MENU_KEYS.map((item) => (
-          <View key={item.key}>
-            <Pressable
-              onPress={() => !item.hasSwitch && handleMenuPress(item.key)}
-              style={({ pressed }) => [
-                styles.menuItem,
-                pressed && !item.hasSwitch && styles.menuItemPressed,
-              ]}
-            >
-              <Ionicons
-                name={item.icon as keyof typeof Ionicons.glyphMap}
-                size={22}
-                color={colors.textMuted}
-              />
-              <View style={styles.menuItemContent}>
-                <Text style={styles.menuLabel}>{t(item.labelKey)}</Text>
-                {item.key === "notifications" && (
+        {MENU_KEYS.map((item, index) => (
+          <Animated.View
+            key={item.key}
+            entering={FadeIn.delay(index * 60).duration(380).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}
+          >
+            <MenuItem
+              icon={item.icon as keyof typeof Ionicons.glyphMap}
+              label={item.labelKey}
+              onPress={item.hasSwitch ? undefined : () => handleMenuPress(item.key)}
+              rightContent={
+                item.key === "notifications" ? (
                   <Switch
                     value={notificationsEnabled}
                     onValueChange={handleNotificationsToggle}
                     trackColor={{ false: colors.border, true: colors.accentDim }}
                     thumbColor={notificationsEnabled ? colors.accent : colors.textMuted}
                   />
-                )}
-                {item.key === "theme" && (
+                ) : item.key === "theme" ? (
                   <Text style={styles.menuSubtext}>{themeLabel}</Text>
-                )}
-                {!item.hasSwitch && item.key !== "theme" && (
+                ) : (
                   <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                )}
-              </View>
-            </Pressable>
-          </View>
+                )
+              }
+            />
+          </Animated.View>
         ))}
       </View>
 
-      <View style={styles.section}>
+      <Animated.View
+        style={styles.section}
+        entering={FadeIn.delay(240).duration(380).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}
+      >
         <Text style={styles.sectionTitle}>{t("profile.data")}</Text>
-        <Pressable
+        <MenuItem
+          icon="trash-outline"
+          label="profile.clearCompleted"
           onPress={handleClearCompleted}
           disabled={completedCount === 0}
-          style={({ pressed }) => [
-            styles.menuItem,
-            pressed && styles.menuItemPressed,
-            completedCount === 0 && styles.menuItemDisabled,
-          ]}
-        >
-          <Ionicons name="trash-outline" size={22} color={colors.textMuted} />
-          <Text style={[styles.menuLabel, completedCount === 0 && styles.menuLabelDisabled]}>
-            {t("profile.clearCompleted")}
-          </Text>
-          {completedCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{completedCount}</Text>
-            </View>
-          )}
-        </Pressable>
-      </View>
+          rightContent={
+            completedCount > 0 ? (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{completedCount}</Text>
+              </View>
+            ) : undefined
+          }
+        />
+      </Animated.View>
 
       <Modal
         visible={languageModalVisible}
@@ -257,7 +282,7 @@ export default function ProfileScreen() {
         >
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.modalTitle}>{t("profile.languageModal.title")}</Text>
-            <Pressable
+            <AnimatedPressable
               style={[styles.langOption, i18n.language === "tr" && styles.langOptionActive]}
               onPress={() => {
                 i18n.changeLanguage("tr");
@@ -267,8 +292,8 @@ export default function ProfileScreen() {
               <Text style={[styles.langOptionText, i18n.language === "tr" && styles.langOptionTextActive]}>
                 {t("profile.languageModal.turkish")}
               </Text>
-            </Pressable>
-            <Pressable
+            </AnimatedPressable>
+            <AnimatedPressable
               style={[styles.langOption, i18n.language === "en" && styles.langOptionActive]}
               onPress={() => {
                 i18n.changeLanguage("en");
@@ -278,13 +303,11 @@ export default function ProfileScreen() {
               <Text style={[styles.langOptionText, i18n.language === "en" && styles.langOptionTextActive]}>
                 {t("profile.languageModal.english")}
               </Text>
-            </Pressable>
-            <Pressable
-              style={styles.modalCloseBtn}
+            </AnimatedPressable>
+            <AnimatedCancelButton
               onPress={() => setLanguageModalVisible(false)}
-            >
-              <Text style={styles.modalCloseText}>{t("common.cancel")}</Text>
-            </Pressable>
+              style={styles.modalCloseBtn}
+            />
           </Pressable>
         </Pressable>
       </Modal>
@@ -310,12 +333,10 @@ export default function ProfileScreen() {
             <Text style={styles.tipText}>{t("profile.tip2")}</Text>
             <Text style={styles.tipText}>{t("profile.tip3")}</Text>
             <Text style={styles.tipText}>{t("profile.tip4")}</Text>
-            <Pressable
-              style={styles.modalCloseBtn}
+            <AnimatedCancelButton
               onPress={() => setHelpModalVisible(false)}
-            >
-              <Text style={styles.modalCloseText}>{t("common.cancel")}</Text>
-            </Pressable>
+              style={styles.modalCloseBtn}
+            />
           </Pressable>
         </Pressable>
       </Modal>
@@ -333,7 +354,7 @@ export default function ProfileScreen() {
           <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
             <Text style={styles.modalTitle}>{t("profile.themeModal.title")}</Text>
             {(["system", "light", "dark"] as const).map((pref) => (
-              <Pressable
+              <AnimatedPressable
                 key={pref}
                 style={[styles.langOption, themePreference === pref && styles.langOptionActive]}
                 onPress={() => {
@@ -353,14 +374,12 @@ export default function ProfileScreen() {
                       ? t("profile.themeLight")
                       : t("profile.themeDark")}
                 </Text>
-              </Pressable>
+              </AnimatedPressable>
             ))}
-            <Pressable
-              style={styles.modalCloseBtn}
+            <AnimatedCancelButton
               onPress={() => setThemeModalVisible(false)}
-            >
-              <Text style={styles.modalCloseText}>{t("common.cancel")}</Text>
-            </Pressable>
+              style={styles.modalCloseBtn}
+            />
           </Pressable>
         </Pressable>
       </Modal>

@@ -2,7 +2,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
+import Animated, { Easing, FadeIn, FadeOut } from "react-native-reanimated";
+import { AnimatedPressable } from "../../../components/ui/AnimatedPressable";
 import { getCategoryLabel } from "../../../constants/categories";
 import {
   PRIORITY_COLORS,
@@ -10,20 +11,17 @@ import {
 } from "../../../constants/theme";
 import { useTheme } from "../../../context/ThemeContext";
 import type { TodoModel } from "../../../types/todo";
-import { formatReminderDate, isReminderPast } from "../../../utils/dateUtils";
+import {
+  formatReminderDate,
+  isReminderPast,
+  toDateStr,
+} from "../../../utils/dateUtils";
 import {
   formatScheduleSummary,
   getTodaysSlots,
   isSlotCompleted,
   isTaskActiveToday,
 } from "../../../utils/scheduleUtils";
-
-function toDateStr(date: Date): string {
-  const y = date.getFullYear();
-  const m = (date.getMonth() + 1).toString().padStart(2, "0");
-  const d = date.getDate().toString().padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 interface TodoCardProps {
   item: TodoModel;
@@ -46,7 +44,8 @@ export function TodoCard({
 }: TodoCardProps) {
   const { t } = useTranslation();
   const { colors } = useTheme();
-  const [checklistExpanded, setChecklistExpanded] = useState(false);
+  const isShoppingList = item.scheduleType === "shopping_list";
+  const [checklistExpanded, setChecklistExpanded] = useState(isShoppingList);
   const priorityColor = item.priority
     ? PRIORITY_COLORS[item.priority]
     : undefined;
@@ -54,7 +53,6 @@ export function TodoCard({
     item.scheduleType === "multi_times_daily" ||
     item.scheduleType === "ongoing" ||
     item.scheduleType === "weekly_days";
-  const isShoppingList = item.scheduleType === "shopping_list";
   const todaysSlots = isSlotType ? getTodaysSlots(item) : [];
   const todayStr = toDateStr(new Date());
   const showMainCheckbox = !isSlotType;
@@ -70,12 +68,11 @@ export function TodoCard({
           borderRadius: 16,
           paddingVertical: 14,
           paddingHorizontal: 16,
-          marginBottom: 8,
         },
         checkbox: {
           width: 22,
           height: 22,
-          borderRadius: 6,
+          borderRadius: 10,
           borderWidth: 1.5,
           borderColor: colors.border,
           alignItems: "center",
@@ -121,7 +118,7 @@ export function TodoCard({
         checklistCheckbox: {
           width: 18,
           height: 18,
-          borderRadius: 4,
+          borderRadius: 8,
           borderWidth: 1.5,
           borderColor: colors.border,
           alignItems: "center",
@@ -132,7 +129,12 @@ export function TodoCard({
           textDecorationLine: "line-through",
           color: colors.textMuted,
         },
-        todoText: { fontSize: 15, fontWeight: "500", color: colors.text, lineHeight: 20 },
+        todoText: {
+          fontSize: 15,
+          fontWeight: "500",
+          color: colors.text,
+          lineHeight: 20,
+        },
         todoTextDone: {
           textDecorationLine: "line-through",
           color: colors.textMuted,
@@ -144,13 +146,20 @@ export function TodoCard({
           flexWrap: "wrap",
           gap: 6,
           marginTop: 8,
+          minWidth: 0,
         },
         metaItem: {
           flexDirection: "row",
           alignItems: "center",
           gap: 4,
+          flexShrink: 1,
+          minWidth: 0,
         },
-        metaText: { fontSize: 12, color: colors.textMuted },
+        metaText: {
+          fontSize: 12,
+          color: colors.textMuted,
+          flexShrink: 1,
+        },
         metaDot: {
           width: 3,
           height: 3,
@@ -183,36 +192,36 @@ export function TodoCard({
         slotChipText: { fontSize: 12, fontWeight: "500", color: colors.text },
         slotChipTextDone: { color: colors.accent, fontWeight: "600" },
         pressed: { opacity: 0.7 },
+        priorityBar: {
+          width: 4,
+          borderRadius: 2,
+          alignSelf: "stretch",
+          marginRight: 12,
+          marginVertical: 10,
+        },
       }),
     [colors],
   );
 
   return (
     <Animated.View
-      entering={FadeIn.delay(index * 40).duration(300)}
-      exiting={FadeOut.duration(200)}
-      style={[
-        styles.todoRow,
-        priorityColor && {
-          borderLeftWidth: 2,
-          borderLeftColor: priorityColor,
-        },
-      ]}
+      entering={FadeIn.delay(index * 50).duration(360).easing(Easing.bezier(0.25, 0.1, 0.25, 1))}
+      exiting={FadeOut.duration(220)}
+      style={styles.todoRow}
     >
+      {priorityColor && (
+        <View style={[styles.priorityBar, { backgroundColor: priorityColor }]} />
+      )}
       {showMainCheckbox && (
-        <Pressable
+        <AnimatedPressable
           onPress={() => onToggle(item.id)}
-          style={({ pressed }) => [
-            styles.checkbox,
-            item.completed && styles.checkboxDone,
-            pressed && styles.pressed,
-          ]}
+          style={[styles.checkbox, item.completed && styles.checkboxDone]}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
           {item.completed && (
             <Ionicons name="checkmark" size={14} color={colors.bg} />
           )}
-        </Pressable>
+        </AnimatedPressable>
       )}
       {isSlotType && <View style={styles.checkboxSpacer} />}
       <Pressable
@@ -231,7 +240,7 @@ export function TodoCard({
           </Text>
           <View style={styles.titleRowActions}>
             {onEdit && (
-              <Pressable
+              <AnimatedPressable
                 onPress={() => onEdit(item)}
                 style={styles.editBtn}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -243,14 +252,16 @@ export function TodoCard({
                   size={18}
                   color={colors.textMuted}
                 />
-              </Pressable>
+              </AnimatedPressable>
             )}
             {isShoppingList && checklistItems.length > 0 && (
-              <Pressable
+              <AnimatedPressable
                 onPress={() => setChecklistExpanded((prev) => !prev)}
                 style={styles.expandBtn}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                accessibilityLabel={checklistExpanded ? t("common.collapse") : t("common.expand")}
+                accessibilityLabel={
+                  checklistExpanded ? t("common.collapse") : t("common.expand")
+                }
                 accessibilityRole="button"
               >
                 <Ionicons
@@ -258,42 +269,45 @@ export function TodoCard({
                   size={16}
                   color={colors.textMuted}
                 />
-              </Pressable>
+              </AnimatedPressable>
             )}
           </View>
         </View>
-        {isShoppingList && checklistExpanded && checklistItems.length > 0 && onToggleChecklistItem && (
-          <View style={styles.checklistItems}>
-            {checklistItems.map((ci) => (
-              <Pressable
-                key={ci.id}
-                onPress={() => onToggleChecklistItem(item.id, ci.id)}
-                style={styles.checklistItemRow}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              >
-                <View
-                  style={[
-                    styles.checklistCheckbox,
-                    ci.completed && styles.checkboxDone,
-                  ]}
+        {isShoppingList &&
+          checklistExpanded &&
+          checklistItems.length > 0 &&
+          onToggleChecklistItem && (
+            <View style={styles.checklistItems}>
+              {checklistItems.map((ci) => (
+                <AnimatedPressable
+                  key={ci.id}
+                  onPress={() => onToggleChecklistItem(item.id, ci.id)}
+                  style={styles.checklistItemRow}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                 >
-                  {ci.completed && (
-                    <Ionicons name="checkmark" size={10} color={colors.bg} />
-                  )}
-                </View>
-                <Text
-                  style={[
-                    styles.checklistItemText,
-                    ci.completed && styles.checklistItemTextDone,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {ci.text}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
+                  <View
+                    style={[
+                      styles.checklistCheckbox,
+                      ci.completed && styles.checkboxDone,
+                    ]}
+                  >
+                    {ci.completed && (
+                      <Ionicons name="checkmark" size={10} color={colors.bg} />
+                    )}
+                  </View>
+                  <Text
+                    style={[
+                      styles.checklistItemText,
+                      ci.completed && styles.checklistItemTextDone,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {ci.text}
+                  </Text>
+                </AnimatedPressable>
+              ))}
+            </View>
+          )}
         {(item.categoryId ||
           (item.scheduleType === "one_time" &&
             item.reminderAt &&
@@ -326,15 +340,27 @@ export function TodoCard({
             !item.completed &&
             !isReminderPast(item.reminderAt) ? (
               <View style={styles.metaItem}>
-                <Ionicons name="time-outline" size={12} color={colors.textMuted} />
+                <Ionicons
+                  name="time-outline"
+                  size={12}
+                  color={colors.textMuted}
+                />
                 <Text style={styles.metaText}>
                   {formatReminderDate(item.reminderAt)}
                 </Text>
               </View>
             ) : item.scheduleType !== "one_time" ? (
               <View style={styles.metaItem}>
-                <Ionicons name="repeat-outline" size={12} color={colors.textMuted} />
-                <Text style={styles.metaText} numberOfLines={1}>
+                <Ionicons
+                  name="repeat-outline"
+                  size={12}
+                  color={colors.textMuted}
+                />
+                <Text
+                  style={styles.metaText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {formatScheduleSummary(item)}
                 </Text>
               </View>
@@ -350,8 +376,8 @@ export function TodoCard({
               <View style={styles.slotsList}>
                 {todaysSlots.map((timeStr) => {
                   const done = isSlotCompleted(item, todayStr, timeStr);
-                  return (
-                    <Pressable
+                    return (
+                    <AnimatedPressable
                       key={timeStr}
                       onPress={() => onToggleSlot(item.id, todayStr, timeStr)}
                       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -379,7 +405,7 @@ export function TodoCard({
                       >
                         {timeStr}
                       </Text>
-                    </Pressable>
+                    </AnimatedPressable>
                   );
                 })}
               </View>

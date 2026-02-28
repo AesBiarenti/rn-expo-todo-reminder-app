@@ -1,0 +1,59 @@
+{
+  "context": {
+    "app_name": "Todo Reminder",
+    "app_type": "Task and reminder management mobile application",
+    "target": "Minimal app logo / icon design for iOS and Android"
+  },
+  "visual_requirements": {
+    "style": "Minimal, flat, modern",
+    "complexity": "Simple, recognizable at small sizes (16x16 to 1024x1024)",
+    "form": "Single mark or symbol, no text, works in square format",
+    "aesthetic": "Clean lines, geometric, uncluttered, professional"
+  },
+  "conceptual_elements": {
+    "primary_associations": [
+      "Checklist / to-do",
+      "Task completion",
+      "Reminder / notification",
+      "Calendar / scheduling"
+    ],
+    "symbol_suggestions": [
+      "Checkmark within a circle or square",
+      "Document/note with checkmark",
+      "Calendar day block with check",
+      "Abstract combination of list lines + check",
+      "Bell or clock merged with checkmark"
+    ],
+    "avoid": [
+      "Overly literal illustrations",
+      "Too many elements",
+      "Thin lines that disappear at small sizes",
+      "Generic clip-art look"
+    ]
+  },
+  "color_palette": {
+    "primary_accent": "#4ADE80",
+    "description": "Bright mint green - main brand color, conveys completion and freshness",
+    "variants": {
+      "light_bg": "#FFFFFF",
+      "dark_bg": "#0C0C0E",
+      "surface": "#161618"
+    },
+    "usage": "Logo works in: solid accent, white on dark, dark on light, monochrome"
+  },
+  "technical_specs": {
+    "format": "Square 1:1",
+    "safe_zone": "Key elements within 80% of canvas",
+    "detail_level": "Readable at 32px",
+    "style_notes": "Flat design, sharp or slightly rounded corners"
+  },
+  "prompt_text": "Minimal flat app icon logo for a todo and reminder application. A single geometric symbol combining a checkmark with a list or calendar. Bright mint green (#4ADE80). Clean lines, modern. No text. Recognizable at small sizes. Flat design, no gradients. Square format.",
+  "chatgpt_prompts": {
+    "primary": "Create a minimal, flat app icon logo for a todo and reminder mobile app. Design a single geometric symbol suggesting: checklist, task completion, reminders. Use bright mint green (#4ADE80). Simple enough to recognize at 32x32px. No text. Clean lines. Square format. Checkmark integrated with list lines or calendar block. Flat design, no gradients.",
+    "alternative_concepts": [
+      "Minimal app icon: stylized checkmark inside a rounded square, mint green #4ADE80, flat design, no gradients, for todo app",
+      "Simple logo: three horizontal list lines, top line becomes a checkmark, mint green, minimalist flat square icon",
+      "Abstract icon: circle with checkmark, circle hints at notification bell, mint green #4ADE80, minimal flat for task app"
+    ]
+  }
+}
